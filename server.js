@@ -3,8 +3,8 @@ const express = require("express");
 const dotenv = require("dotenv").config({ path: '../.env' });
 // const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-// const cors = require("cors");
-// const corsConfiguration = require("./utils/corsConfiguration")
+const cors = require("cors");
+const corsConfiguration = require("./utils/corsConfiguration")
 // const fileUpload = require('express-fileupload')
 const path = require("path");
 const stripe = require("stripe")(
@@ -46,9 +46,9 @@ const rateLimiter = expressRateLimit({
 });
 // app.use('/api', rateLimiter)
 
-// app.use(
-//   cors(corsConfiguration)
-// );
+app.use(
+  cors(corsConfiguration)
+);
 app.use(cookieParser());
 
 app.use((req, res, next) => {
