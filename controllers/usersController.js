@@ -7,12 +7,24 @@ const User = require("./../models/users");
 const Booking = require("./../models/bookings");
 const Hotel = require("./../models/hotels");
 const Review = require("./../models/reviews");
-const sendOutMail = require('../utils/handleSubscriptionEmail')
+const sendOutMail = require("../utils/handleSubscriptionEmail");
+const cloudinary = require("cloudinary").v2;
+const db = require("./../utils/mysqlConnectionWithPromise");
+const { format } = require("date-fns");
+const configureQueryStr = require('./../utils/configureQueryString')
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
 
 // get all users
 const getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find();
+    const mysqlConnection = await db();
+    const q = "SELECT * FROM users";
+    const [users, fields] = await mysqlConnection.execute(q, []);
 
     res.status(200).json({
       number: users.length,
@@ -26,9 +38,16 @@ const getAllUsers = async (req, res, next) => {
 // get a specific user
 const getUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.user_id);
-    if (!user)
-      return next(createError("fail", 404, "this user does not exist"));
+    const mysqlConnection = await db();
+    const q = "SELECT * FROM users WHERE id_users = ?";
+    const [userArray, fields] = await mysqlConnection.execute(q, [
+      req.params.user_id,
+    ]);
+    if (userArray.length == 0)
+      return next(createError("fail", 401, "This user does not exist"));
+    const user = userArray[0];
+    // if (!user)
+    //   return next(createError("fail", 404, "this user does not exist"));
     res.status(200).json({
       data: user,
     });
@@ -36,12 +55,21 @@ const getUser = async (req, res, next) => {
     next(err);
   }
 };
+
 // get a specific user by user email
 const findUser = async (req, res, next) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
-    if (!user)
-      return next(createError("fail", 404, "this user does not exist"));
+    const mysqlConnection = await db();
+    const q = "SELECT * FROM users WHERE email = ?";
+    const [userArray, fields] = await mysqlConnection.execute(q, [
+      req.body.email,
+    ]);
+    if (userArray.length == 0)
+      return next(createError("fail", 401, "This user does not exist"));
+    const user = userArray[0];
+    // const user = await User.findOne({ email: req.body.email });
+    // if (!user)
+    //   return next(createError("fail", 404, "this user does not exist"));
     res.status(200).json({
       data: user,
     });
@@ -53,7 +81,21 @@ const findUser = async (req, res, next) => {
 // update a specific user
 const updateUser = async (req, res, next) => {
   try {
+    const mysqlConnection = await db();
+    let queryString = "";
+    let queryString2; 
+    let values = [];
     let Obj = {};
+
+     // check if the user exist
+     let q = "SELECT * FROM users WHERE email = ?" 
+     const [userArr, usersField] = await mysqlConnection.execute(q, [req.body.email])
+     if (userArr.length == 0) {
+      return next(
+        createError("fail", 404, "The user does not exist")
+      );
+     }
+
     if (req.body.roles) {
       if (
         req.body.roles * 1 != 2010 &&
@@ -64,29 +106,39 @@ const updateUser = async (req, res, next) => {
           createError("fail", 404, "user's role can only be 2010, 2020 or 2030")
         );
 
-      Obj.roles = req.body.roles * 1;
+       
+
+      // Obj.roles = req.body.roles * 1;
+      queryString = queryString + " `userCode` = ?, ";
+      values.push(req.body.roles * 1);
     }
 
     if (req.body.active) {
+      queryString = queryString + " `active` = ?, ";
       if (req.body.active.toLowerCase() === "yes") {
-        Obj.active = true;
+        values.push(1);
+        // Obj.active = true;
       } else if (req.body.active.toLowerCase() === "no") {
-        Obj.active = false;
+        values.push(0);
+        // Obj.active = false;
       }
     }
-    
 
-    const user = await User.updateOne(
-      { email: req.body.email },
-      { $set: Obj }
-    );
-    console.log('user: ', user)
-    if (user.matchedCount === 0)
-      return next(createError("fail", 404, "This user does not exist"));
-    
-    res.status(200).json({
-      data: user,
-    });
+
+    queryString2 = configureQueryStr(queryString, ",")
+    // console.log('queryString2: ', queryString2)
+
+     q = "UPDATE users SET " + queryString2 + " WHERE email = ?";
+    values.push(req.body.email);
+    const results = await mysqlConnection.execute(q, values);
+    // console.log("results: ", results);
+    // console.log("ResultSetHeader.changedRows: ", results[0].affectedRows);
+    if (results[0].affectedRows == 0)
+      return next(createError("fail", 401, "This user does not exist"));
+    let data = {}
+    data.matchedCount = 1
+
+    res.status(200).json({data: data});
   } catch (err) {
     next(err);
   }
@@ -95,36 +147,19 @@ const updateUser = async (req, res, next) => {
 // Admin deletes a specific user
 const deleteUser = async (req, res, next) => {
   try {
+    const mysqlConnection = await db();
     // check if the user exists
-    const userToDelete = await User.findById(req.params.user_id)
-    if (!userToDelete)
-      return next(createError("fail", 404, "this user does not exist"));
+    let q = "SELECT * FROM users WHERE id_users = ?";
+    const [userArray, fields] = await mysqlConnection.execute(q, [
+      req.params.user_id,
+    ]);
+    if (userArray.length == 0)
+      return next(createError("fail", 401, "This user does not exist"));
+    const user = userArray[0];
 
-    // delete user's bookings
-    await Booking.deleteMany({ user: req.params.user_id });
-
-    // delete user's reviews
-    await Review.deleteMany({ customer: req.params.user_id });
-
-    // delete user from hotel information if user is a staff or a manager
-    const hotel = await Hotel.find({
-      $or: [{ manager: req.params.user_id }, { staff: req.params.user_id }],
-    });
-
-    if (hotel.length > 0) {
-      hotel.forEach(async (eachHotel) => {
-        if (eachHotel.manager._id == req.params.user_id) {
-          eachHotel.manager = undefined;
-        }
-        eachHotel.staff = eachHotel.staff.filter(
-          (eachStaff) => eachStaff._id != req.params.user_id
-        );
-        await eachHotel.save()
-      });
-    }
-
-    await User.findByIdAndDelete(req.params.user_id);
-    
+    q = "DELETE FROM users WHERE id_users = ?";
+    const results = await mysqlConnection.execute(q, [user.id_users]);
+    // console.log("results: ", results);
 
     res.status(204).json("User has been deleted");
   } catch (err) {
@@ -167,15 +202,19 @@ const usersByCategories = async (req, res, next) => {
 // the request handler below is for a logged in user who wants to change his/her data in the database
 const updateMyAccount = async (req, res, next) => {
   try {
+    const mysqlConnection = await db();
     // get user with the user id
-    const loggedInUser = await User.findById(req.userInfo.id);
-    if (!loggedInUser)
+    let q = "SELECT * FROM users WHERE id_users = ?";
+    const [userArray, fields] = await mysqlConnection.execute(q, [
+      req.userInfo.id
+    ]);
+    if (userArray.length == 0)
       return next(createError("fail", 404, "This user no longer exists"));
+    // const loggedInUser = await User.findById(req.userInfo.id);
+    // if (!loggedInUser)
+    //   return next(createError("fail", 404, "This user no longer exists"));
 
-    // get user information to update
-    if (req.body.email) loggedInUser.email = req.body.email;
-    if (req.body.username) loggedInUser.username = req.body.username;
-    if (req.body.name) loggedInUser.name = req.body.name;
+    // check if user provided any information to update
     if (!req.body.email && !req.body.username && !req.body.name)
       return next(
         createError(
@@ -185,8 +224,60 @@ const updateMyAccount = async (req, res, next) => {
         )
       );
 
+    // get user information to update
+    let queryString = "";
+    let queryString2;
+    let values = [];
+    if (req.body.email) {
+      // check if email already exist
+      q = "SELECT * FROM users WHERE email = ?";
+      const [alreadyExist2, fields2] = await mysqlConnection.execute(q, [
+        req.body.email
+      ]);
+      if (alreadyExist2.length)
+        return next(
+          createError(
+            "fail",
+            409,
+            "The email already exist. Choose another email"
+          )
+        );
+      queryString = queryString + "`email` = ?, ";
+      values.push(req.body.email);
+      // const duplicateEmail = await User.findOne({ email: req.body.email });
+      // if (duplicateEmail) {
+      //   return next(createError("fail", 400, "email already exist"));
+      // }
+      // loggedInUser.email = req.body.email;
+    }
+    if (req.body.username) {
+      // check if username already exist
+      q = "SELECT * FROM users WHERE username = ?";
+  const [alreadyExist, fields] = await mysqlConnection.execute(q, [req.body.username])
+  if (alreadyExist.length) return next(createError('fail', 409, "The username already exist. Choose another username"))
+  queryString = queryString + "`username` = ?, "
+values.push(req.body.username)
+      // const duplicateUsername = await User.findOne({
+      //   username: req.body.username,
+      // });
+      // if (duplicateUsername) {
+      //   return next(createError("fail", 400, "username already exist"));
+      // }
+      // loggedInUser.username = req.body.username;
+    }
+    if (req.body.name) {
+      queryString = queryString + "`name` = ?, "
+      values.push(req.body.name)
+      // loggedInUser.name = req.body.name;
+    }
+
+    queryString2 = configureQueryStr(queryString, ",")
+    
     // update user information
-    await loggedInUser.save();
+    q = "UPDATE users SET " + queryString2 + " WHERE id_users = ?"
+    values.push(req.userInfo.id)
+    const results = await mysqlConnection.execute(q, values)
+    // await loggedInUser.save();
 
     res.status(200).json("Your information has been updated");
   } catch (err) {
@@ -197,16 +288,22 @@ const updateMyAccount = async (req, res, next) => {
 // the request handler below is for a logged in user who wants to delete his/her account
 const deleteMyAccount = async (req, res, next) => {
   try {
+    const mysqlConnection = await db()
     // get user with the user id
-    const loggedInUser = await User.findById(req.userInfo.id).select("+active");
-    if (!loggedInUser)
-      return next(createError("fail", 404, "This user no longer exists"));
+    let q = "SELECT * FROM users WHERE id_users = ?"
+    const [userArray, fields] = await mysqlConnection.execute(q, [req.userInfo.id])
+    if (userArray.length == 0) return next(createError("fail", 401, "This user no longer exists"))
+    // const loggedInUser = await User.findById(req.userInfo.id).select("+active");
+    // if (!loggedInUser)
+    //   return next(createError("fail", 404, "This user no longer exists"));
 
     // deactivate user
-    loggedInUser.active = false;
+    q = "UPDATE users SET `active` = ? WHERE id_users = ?"
+    const results = await mysqlConnection.execute(q, [0, req.userInfo.id])
+    // loggedInUser.active = false;
 
     // update user information
-    await loggedInUser.save();
+    // await loggedInUser.save();
 
     // there is a query middleware in the user Schema that includes only users with active: true
     // before any query beginning with 'find' is executed.
@@ -220,12 +317,16 @@ const deleteMyAccount = async (req, res, next) => {
 // the request handler below is for a logged in user who wants to see his/her account information
 const seeMyAccount = async (req, res, next) => {
   try {
+    const mysqlConnection = await db()
     //get user with the user id
-    const loggedInUser = await User.findById(req.userInfo.id);
-    if (!loggedInUser)
-      return next(createError("fail", 404, "This user no longer exists"));
+    let q = "SELECT * FROM users WHERE id_users = ?"
+    const [userArray, fields] = await mysqlConnection.execute(q, [req.userInfo.id])
+    if (userArray.length == 0) return next(createError("fail", 404, "This user no longer exists"));
+    const loggedInUser = userArray[0]
+    // const loggedInUser = await User.findById(req.userInfo.id);
+    // if (!loggedInUser)
+    //   return next(createError("fail", 404, "This user no longer exists"));
 
-    // res.sendFile(path.join(__dirname, '..', 'views', "mines.html"));
     res.status(200).json({
       data: loggedInUser,
     });
@@ -237,46 +338,93 @@ const seeMyAccount = async (req, res, next) => {
 // the request handler below is for updating the user's profile photo
 const seeMyPhoto = async (req, res, next) => {
   try {
-    // get user with the user id
-    const loggedInUser = await User.findById(req.userInfo.id);
-    if (!loggedInUser)
-      return next(createError("fail", 404, "This user no longer exists"));
+    const mysqlConnection = await db()
+    //get user with the user id
+    let q = "SELECT * FROM users WHERE id_users = ?"
+    const [userArray, fields] = await mysqlConnection.execute(q, [req.userInfo.id])
+    if (userArray.length == 0) return next(createError("fail", 404, "This user no longer exists"));
+    const loggedInUser = userArray[0]
+    // const loggedInUser = await User.findById(req.userInfo.id);
+    // if (!loggedInUser)
+    //   return next(createError("fail", 404, "This user no longer exists"));
 
-    let filePath;
-    if (loggedInUser.photo === "default_profile_pic.png") {
-      filePath = path.join(
-        __dirname,
-        "..",
-        "public",
-        "default_profile_pic.png"
-      );
-
-      return res.status(200).sendFile(filePath)
-    } else {
-      return res.status(200).json({data: loggedInUser.photo});
-    }
- 
+    return res.status(200).json({ data: loggedInUser.photo });
   } catch (err) {
     next(err);
   }
 };
 
-
-const handleSubscription = async (req, res, next) => {
+// the request handler below is for deleting the user's profile photo
+const deleteMyPhoto = async (req, res, next) => {
   try {
-    //get user with the submitted email
-    const user = await User.findOne({email: (req.body.email).toLowerCase()});
-    if (!user)
-      return next(createError("fail", 404, "This user does not exist"));
+    const mysqlConnection = await db()
+    //get user with the user id
+    let q = "SELECT * FROM users WHERE id_users = ?"
+    const [userArray, fields] = await mysqlConnection.execute(q, [req.userInfo.id])
+    if (userArray.length == 0) return next(createError("fail", 404, "This user no longer exists"));
+    const loggedInUser = userArray[0]
+    // const loggedInUser = await User.findById(req.userInfo.id);
+    // if (!loggedInUser)
+    //   return next(createError("fail", 404, "This user no longer exists"));
+    const publicId = loggedInUser.photo_id;
+    const defaultPhoto = "https://res.cloudinary.com/dmth3elzl/image/upload/v1705633392/profilephotos/edeo8b4vzeppeovxny9c.png";
+    q = "UPDATE users SET `photo` = ?, `photo_id` = ? WHERE id_users = ?"
+    const results = await mysqlConnection.execute(q, [defaultPhoto, null, req.userInfo.id])
+    // loggedInUser.photo = 
+    //   "https://res.cloudinary.com/dmth3elzl/image/upload/v1705633392/profilephotos/edeo8b4vzeppeovxny9c.png";
+    // loggedInUser.photo_id = undefined;
 
-    user.password = undefined
+    // await loggedInUser.save();
+    if (publicId) {
+      await cloudinary.uploader.destroy(publicId);
+    }
 
-    await sendOutMail(user)
-
-    res.status(200).json('Thank you for subscribing to our news letters');
+    return res.status(204).json("profile photo changed successfully");
   } catch (err) {
     next(err);
   }
+};
+
+const handleSubscription = async (req, res, next) => {
+  try {
+    const mysqlConnection = await db()
+    //get user with the user id
+    let q = "SELECT * FROM users WHERE email = ?"
+    const [userArray, fields] = await mysqlConnection.execute(q, [req.body.email.toLowerCase()])
+    if (userArray.length == 0) return next(createError("fail", 404, "This user no longer exists"));
+    const loggedInUser = userArray[0]
+    // const user = await User.findOne({ email: req.body.email.toLowerCase() });
+    // if (!user)
+    //   return next(createError("fail", 404, "This user does not exist"));
+
+    // user.password = undefined;
+
+    await sendOutMail(loggedInUser);
+
+    res.status(200).json("Thank you for subscribing to our news letters");
+  } catch (err) {
+    next(err);
+  }
+};
+
+const createRoles = async (req, res, next) => {
+  try {
+    const mysqlConnection = await db()
+    let q = "INSERT INTO staff_roles (id_staff_roles, staffRoles) VALUES (?, ?)";
+    // const values = [req.body.roles_id, req.body.staffRole];
+    const results = await mysqlConnection.execute(q, [req.body.roles_id, req.body.staffRole])
+    if (results[0].affectedRows == 0)
+      return next(createError("fail", 401, "This role already exist"));
+      q = "SELECT * FROM staff_roles WHERE id_staff = ?"
+      // q = "SELECT LAST_INSERT_ID()"
+      const hotelArray = await mysqlConnection.execute(q, [results[0].insertId])
+      // console.log("last row: ", hotelArray)
+      return res.status(201).json("role created")
+  } catch (err) {
+    next(err);
+  }
+  
+  
 };
 
 module.exports = {
@@ -290,5 +438,7 @@ module.exports = {
   deleteMyAccount,
   seeMyAccount,
   seeMyPhoto,
-  handleSubscription
+  deleteMyPhoto,
+  handleSubscription,
+  createRoles,
 };

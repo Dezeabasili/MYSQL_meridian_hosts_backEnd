@@ -1,10 +1,10 @@
 const express = require("express");
 // const dotenv = require("dotenv").config();
 const dotenv = require("dotenv").config({ path: '../.env' });
-const mongoose = require("mongoose");
+// const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-const cors = require("cors");
-const corsConfiguration = require("./utils/corsConfiguration")
+// const cors = require("cors");
+// const corsConfiguration = require("./utils/corsConfiguration")
 // const fileUpload = require('express-fileupload')
 const path = require("path");
 const stripe = require("stripe")(
@@ -29,15 +29,6 @@ const createError = require("./utils/error");
 const app = express();
 const PORT = process.env.PORT || 4000
 
-const connect = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_DB);
-    console.log("connected to MongoDB");
-  } catch (err) {
-    console.log(err.msg);
-  }
-};
-
 // globally handle uncaught exceptions from synchronous processes. Errors that occur outside express
 process.on("uncaughtException", (err) => {
   console.log("uncaught exception, shutting down");
@@ -55,9 +46,9 @@ const rateLimiter = expressRateLimit({
 });
 // app.use('/api', rateLimiter)
 
-app.use(
-  cors(corsConfiguration)
-);
+// app.use(
+//   cors(corsConfiguration)
+// );
 app.use(cookieParser());
 
 app.use((req, res, next) => {
@@ -80,11 +71,11 @@ app.use(trimRequestBody);
 
 // serving static files
 app.use(express.static(path.join(__dirname, "public")));
-app.use('/hotel-cities/', express.static(path.join(__dirname, "hotel-cities")));
-app.use('/hotel-types/', express.static(path.join(__dirname, "hotel-types")));
-app.use('/hotelsPictures/', express.static(path.join(__dirname, "hotelsPictures")));
-app.use('/roomsPictures/', express.static(path.join(__dirname, "roomsPictures")));
-app.use('/profilePic/', express.static(path.join(__dirname, "profilePic")));
+// app.use('/hotel-cities/', express.static(path.join(__dirname, "hotel-cities")));
+// app.use('/hotel-types/', express.static(path.join(__dirname, "hotel-types")));
+// app.use('/hotelsPictures/', express.static(path.join(__dirname, "hotelsPictures")));
+// app.use('/roomsPictures/', express.static(path.join(__dirname, "roomsPictures")));
+// app.use('/profilePic/', express.static(path.join(__dirname, "profilePic")));
 // app.use(express.static("public"));
 // app.use('/api/v1/pictures', express.static("public"));
 
@@ -109,37 +100,6 @@ app.use("/api/v1/reviews", reviewsRouter);
 app.use("/api/v1/stripe", stripeRouter);
 app.use("/api/v1/bookings", bookingsRouter);
 app.use("/api/v1/pictures", picturesRouter);
-
-// app.post('/hooks', express.raw({type: 'application/json'}), async (req, res) => {
-//     let signinSecret = "whsec_855119b96a4df9440f13897a880d6bfd37170ee714729d5bf3f441666ba1fba0"
-//     const payload = req.body
-
-//     const sig = req.headers['stripe-signature'];
-
-//     let event
-//   try {
-//     event = stripe.webhooks.constructEvent(payload, sig, signinSecret);
-//   }
-//   catch (err) {
-//     console.log(err.message)
-//     return res.status(400).send(`Webhook Error: ${err.message}`);
-//   }
-
-// if (event.type === 'checkout.session.completed') {
-
-//     const customer = await stripe.customers.retrieve(
-//         event.data.object.customer
-//       );
-
-//     console.log(customer)
-//     // console.log(event.data.object.customer)
-
-// }
-
-// //   console.log(event.type)
-// //   console.log(event.data.object)
-//   return res.json({received: true});
-// })
 
 app.all("*", (req, res, next) => {
   next(createError("fail", 404, `cannot find ${req.originalUrl}`));
@@ -226,7 +186,7 @@ app.use((err, req, res, next) => {
 });
 
 const server = app.listen(PORT, () => {
-  connect();
+  // connect();
   console.log("listening on port 4000");
 });
 

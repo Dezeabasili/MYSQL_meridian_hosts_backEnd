@@ -13,11 +13,11 @@ const HotelSchema = new Schema(
     },
     type: {
       type: mongoose.ObjectId,
-        ref: "HotelType",
+      ref: "HotelType",
     },
     city: {
       type: mongoose.ObjectId,
-        ref: "City",
+      ref: "City",
     },
     description: {
       type: String,
@@ -26,7 +26,10 @@ const HotelSchema = new Schema(
     },
     detailedDescription: {
       type: String,
-      required: [true, "Please provide a detailed description of the hotel and its facilities"],
+      required: [
+        true,
+        "Please provide a detailed description of the hotel and its facilities",
+      ],
       lowercase: true,
     },
     hotelLocation: {
@@ -43,7 +46,7 @@ const HotelSchema = new Schema(
     },
     closestTouristLocation: {
       type: String,
-      lowercase: true
+      lowercase: true,
     },
     distanceToClosestTouristLocation: {
       type: Number,
@@ -63,6 +66,9 @@ const HotelSchema = new Schema(
       },
     ],
     photos: {
+      type: String,
+    },
+    photo_id: {
       type: String,
     },
     numberOfRatings: {
@@ -161,8 +167,8 @@ HotelSchema.pre(/^find/, function (next) {
       path: "room_ids",
       select: "title price description",
     })
-    .populate('city')
-    .populate('type');
+    .populate("city")
+    .populate("type");
   next();
 });
 

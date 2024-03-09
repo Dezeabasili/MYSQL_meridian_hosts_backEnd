@@ -28,6 +28,9 @@ const RoomSchema = new mongoose.Schema({
     photos: {
         type: [String]
     },
+    photo_id: {
+        type: [String]
+    },
     hotel: {
         type: mongoose.ObjectId, 
         ref: 'Hotel',

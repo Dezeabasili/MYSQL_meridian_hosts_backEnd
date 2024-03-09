@@ -11,7 +11,10 @@ const HotelTypeSchema = new Schema({
     },
     photo: {
         type: String
-    }
+    },
+    photo_id: {
+        type: String
+    },
     
 }, {
     timestamps: true,

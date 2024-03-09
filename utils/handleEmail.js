@@ -24,7 +24,7 @@ const sendOutMail = async (newUser) => {
             to: [
                 {
                     // email: "ezeabasili@yahoo.co.uk",
-                    email: newUser.email,
+                    email: 'ezeabasili@yahoo.co.uk',
                     name: newUser.name
                 }
             ],

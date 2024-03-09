@@ -1,9 +1,12 @@
 const jwt = require('jsonwebtoken')
 const createError = require('../utils/error')
-const User = require('./../models/users')
+const db = require("./../utils/mysqlConnectionWithPromise");
+// const User = require('./../models/users')
 
 const verifyAccessToken = async (req, res, next) => {
     try {
+        const mysqlConnection = await db()
+        
         // check if req has the authorization header
         const authorizationHeader = req.headers?.authorization
         if (!authorizationHeader) return next(createError('fail', 401, 'You are not authenticated_1. Please log in'))
@@ -21,14 +24,19 @@ const verifyAccessToken = async (req, res, next) => {
 
 
         // check if user still exists
-        const loggedInUser = await User.findById(userInfo.id)
-        if (!loggedInUser) return next(createError('fail', 401, 'You are not authenticated_3. Please log in'))
+        let q = "SELECT * FROM users WHERE id_users = ?"
+        const [userArray, fields] = await mysqlConnection.execute(q, [userInfo.id])
+        if (userArray.length == 0) return next(createError('fail', 401, 'You are not authenticated_3. Please log in'))
+        const loggedInUser = userArray[0]
+    // console.log('loggedInUser: ', loggedInUser)
+        // const loggedInUser = await User.findById(userInfo.id) 
+        // if (!loggedInUser) return next(createError('fail', 401, 'You are not authenticated_3. Please log in'))
 
         // check if user changed password after the token was issued
         const checkTimeDifference = new Date(loggedInUser.passwordResetTime).getTime() < userInfo.iat * 1000
 
         if (!checkTimeDifference) return next(createError('fail', 401, 'Please log in again to get a new access token'))
-
+        // console.log(userInfo)
         req.userInfo = userInfo
         next()
 

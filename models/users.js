@@ -39,7 +39,10 @@ const UserSchema = new mongoose.Schema({
     photo: {
         type: String,
         default: 'https://res.cloudinary.com/dmth3elzl/image/upload/v1705633392/profilephotos/edeo8b4vzeppeovxny9c.png',
-        lowercase: true
+        // lowercase: true
+    },
+    photo_id: {
+        type: String
     },
     active: {
         type: Boolean,
