@@ -28,7 +28,7 @@ const renewAccessToken = async (req, res, next) => {
     if (userArray.length == 0) return res.sendStatus(401) // unauthorized
     const user = userArray[0]
     
-    // console.log(user)
+    console.log("user: ", user)
 
     // generate new access token
     const accessToken = jwt.sign({ id: user.id_users, assignedRoles: user.userCode }, process.env.ACCESS_TOKEN, { expiresIn: '1d' })

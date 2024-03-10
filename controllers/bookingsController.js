@@ -15,7 +15,7 @@ const getAllBookings = async (req, res, next) => {
     let hotelValue = []
     let q;
     q =   "SELECT * FROM " + 
-          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
+          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt AS createdAt, hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
           "INNER JOIN hotels ON bookings.id_hotels = hotels.id_hotels " +
           "INNER JOIN cities ON hotels.id_cities = cities.id_cities) AS cte1 " +
           "INNER JOIN " +
@@ -30,7 +30,7 @@ const getAllBookings = async (req, res, next) => {
 
     if (req.query.hotel_id) {
       q =   "SELECT * FROM " + 
-          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt, hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
+          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt AS createdAt, hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
           "INNER JOIN hotels ON bookings.id_hotels = hotels.id_hotels " +
           "INNER JOIN cities ON hotels.id_cities = cities.id_cities) AS cte1 " +
           "INNER JOIN " +
@@ -44,6 +44,8 @@ const getAllBookings = async (req, res, next) => {
       hotelValue.push(req.query.hotel_id)
     }
     const [bookingsArray, bookingsFields] = await mysqlConnection.execute(q, hotelValue);
+
+    console.log("bookingsArray: ", bookingsArray)
 
     // get all the booking references
     let responseArray = [];
@@ -63,6 +65,7 @@ const getAllBookings = async (req, res, next) => {
         newBooking.bookingDetails = [];
         allBookings.push(newBooking);
         bookingRef.push(eachRoom.id_bookings);
+        // console.log("eachRoom.createdAt: ", eachRoom.createdAt)
       }
     });
 
@@ -89,6 +92,8 @@ const getAllBookings = async (req, res, next) => {
       });
       responseArray.push({ ...selectedRef });
     });
+
+    // console.log("responseArray: ", responseArray)
 
     res.status(200).json({
       number: responseArray.length,

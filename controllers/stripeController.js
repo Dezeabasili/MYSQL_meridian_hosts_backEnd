@@ -9,215 +9,123 @@ const db = require("./../utils/mysqlConnectionWithPromise");
 const configureQueryStr = require("./../utils/configureQueryString");
 const { format } = require("date-fns");
 
-// function to get an array of all the intended reservation dates
-const reservationDates = (firstDay, lastDay) => {
-  let startDate = new Date(firstDay);
-  let lastDate = new Date(lastDay);
-  // check if the check-in date and the check-out date are the same
-  // by comparing the year, month and day
-  if (
-    startDate.getFullYear() === lastDate.getFullYear() &&
-    startDate.getMonth() === lastDate.getMonth() &&
-    startDate.getDate() === lastDate.getDate()
-  ) {
-    // add a day to the check-in date
-    lastDate.setDate(startDate.getDate() + 1);
-  }
-  // format(new Date(), "yyyy-MM-dd")
-  let reservationDays = [];
+// function GFG_Fun() {
+//   let date = new Date();
 
-  while (startDate < lastDate) {
-    // reservationDays.push(new Date(startDate));
-    reservationDays.push(format(new Date(startDate), "yyyy-MM-dd"));
-    // increase the day by 1
-    startDate.setDate(startDate.getDate() + 1);
-  }
+//   console.log(
+//     "MySQL datetime - " +
+//       date.toISOString().split("T")[0] +
+//       " " +
+//       date.toTimeString().split(" ")[0]
+//   );
+// }
 
-  return reservationDays;
-};
+// function GFG_Fun2() {
+//   let date = new Date();
+//   console.log(
+//     "MySQL datetime - " + date.toISOString().slice(0, 19).replace("T", " ")
+//   );
+// }
+
+// function to format date
+const formatDate = (value) => {
+  let date = new Date(value);
+  const day = date.toLocaleString('default', { day: '2-digit' });
+  const month = date.toLocaleString('default', { month: 'short' });
+  const year = date.toLocaleString('default', { year: 'numeric' });
+  return day + '-' + month + '-' + year;
+}
+
+
+// function to format date
+const formatDateAndTime = (value) => {
+  let date = new Date(value);
+  const day = date.toLocaleString('default', { day: '2-digit' });
+  const month = date.toLocaleString('default', { month: 'short' });
+  const year = date.toLocaleString('default', { year: 'numeric' });
+  const time = date.toLocaleString('default', { timeStyle: 'short' });
+  return day + '-' + month + '-' + year + '  ' + time;
+}
+
 
 // function to sort dates
-const compareNumbers = (a, b) => {
-  return new Date(a).getTime() - new Date(b).getTime();
+const compareRoomNumbers = (a, b) => {
+  return a.roomNumber - b.roomNumber;
 };
 
-const updateRoomAvailability = async (room_id, reservedDates) => {
-  // console.log(req.body.reservedDates)
+// const updateRoomAvailability = async (room_id, reservedDates) => {
+//   // console.log(req.body.reservedDates)
 
-  const compareNumbers = (a, b) => {
-    return new Date(a).getTime() - new Date(b).getTime();
-  };
-  try {
-    // get the room style to update
-    const roomStyle = await Room.findOne({ "roomNumbers._id": room_id });
-    // console.log(roomStyle)
-    // get the room to update
-    // console.log(roomStyle.roomNumbers[0]?._id)
-    const room = roomStyle.roomNumbers.find(({ _id }) => _id == room_id);
-    // console.log(room)
+//   const compareNumbers = (a, b) => {
+//     return new Date(a).getTime() - new Date(b).getTime();
+//   };
+//   try {
+//     // get the room style to update
+//     const roomStyle = await Room.findOne({ "roomNumbers._id": room_id });
+//     // console.log(roomStyle)
+//     // get the room to update
+//     // console.log(roomStyle.roomNumbers[0]?._id)
+//     const room = roomStyle.roomNumbers.find(({ _id }) => _id == room_id);
+//     // console.log(room)
 
-    // update the unavailable dates for the room
-    const unavailableDates = room.unavailableDates.concat(reservedDates);
-    // console.log(unavailableDates)
-    if (unavailableDates.length >= 2) {
-      unavailableDates.sort(compareNumbers);
-    }
+//     // update the unavailable dates for the room
+//     const unavailableDates = room.unavailableDates.concat(reservedDates);
+//     // console.log(unavailableDates)
+//     if (unavailableDates.length >= 2) {
+//       unavailableDates.sort(compareNumbers);
+//     }
 
-    // room.unavailableDates = [...unavailableDates]
-    roomStyle.roomNumbers = roomStyle.roomNumbers.map((roomNumber) => {
-      if (roomNumber._id == room_id) {
-        return {
-          ...roomNumber,
-          unavailableDates: [...unavailableDates],
-        };
-      } else return roomNumber;
-    });
+//     // room.unavailableDates = [...unavailableDates]
+//     roomStyle.roomNumbers = roomStyle.roomNumbers.map((roomNumber) => {
+//       if (roomNumber._id == room_id) {
+//         return {
+//           ...roomNumber,
+//           unavailableDates: [...unavailableDates],
+//         };
+//       } else return roomNumber;
+//     });
 
-    // console.log(roomStyle)
+//     // console.log(roomStyle)
 
-    await Room.updateOne(
-      { "roomNumbers._id": room_id },
-      {
-        $set: {
-          "roomNumbers.$.unavailableDates": unavailableDates,
-        },
-      }
-    );
+//     await Room.updateOne(
+//       { "roomNumbers._id": room_id },
+//       {
+//         $set: {
+//           "roomNumbers.$.unavailableDates": unavailableDates,
+//         },
+//       }
+//     );
 
-    // save the updated room
-    // await roomStyle.save();
-  } catch (err) {
-    console.log(err);
-  }
-};
+//     // save the updated room
+//     // await roomStyle.save();
+//   } catch (err) {
+//     console.log(err);
+//   }
+// };
+
+
+
+
+
+
+
+let bookedRoomsDetails = [];
 
 // app.post('/create-checkout-session', async (req, res) => {
 const stripeCheckout = async (req, res, next) => {
   const { selectedRooms, reservedDates, hotel_id } = req.body;
 
+
   try {
-    const numberOfNights = reservedDates.length;
+    const numberOfNights = reservedDates.length - 1;
 
     // get all room styles
     const mysqlConnection = await db();
 
-    // get all the room styles
-    // console.log(1);
-    let q = "SELECT * FROM roomstyledescription";
-    const [roomStyleDescriptionArray, fields1] = await mysqlConnection.execute(
-      q,
-      []
-    );
-    if (roomStyleDescriptionArray.length == 0)
-      return next(
-        createError("fail", 404, "There is no room style in the database")
-      );
+    let q;
+    q = " SELECT * FROM hotels WHERE id_hotels = ?"
+    const [hotelArr] = await mysqlConnection.execute(q, [hotel_id * 1])
 
-    let outputString =
-      "roomstyledescription.id_roomStyleDescription, roomstyledescription.id_hotels, roomstyledescription.id_roomStyles, roomstyledescription.price, roomstyledescription.maxPeople, roomstyledescription.description, hotels.name, cities.cityName ";
-    q =
-      "SELECT " +
-      outputString +
-      " FROM roomstyledescription INNER JOIN hotels ON roomstyledescription.id_hotels = hotels.id_hotels INNER JOIN cities ON cities.id_cities = hotels.id_cities WHERE hotels.id_hotels = ?";
-    const [roomStyleArr, fields6] = await mysqlConnection.execute(q, [hotel_id]);
-
-    // get all the room numbers
-    q =
-      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN roomstyles ON roomstyledescription.id_roomStyles = roomstyles.id_roomStyles WHERE roomstyledescription.id_hotels = ?";
-    const [roomNumArr, fields7] = await mysqlConnection.execute(q, [hotel_id]);
-
-    // get the unavailable dates for every room
-    q =
-      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ?";
-    const [unavailableDatesArray, fields8] = await mysqlConnection.execute(
-      q,
-      [hotel_id]
-    );
-
-    // get all the room style photos
-    q =
-      "SELECT * FROM roomstylesphotos INNER JOIN roomstyledescription ON roomstylesphotos.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription WHERE roomstyledescription.id_hotels = ?";
-    const [roomStylePhotosArray, fields9] = await mysqlConnection.execute(
-      q,
-      [hotel_id]
-    );
-
-    let responseArray = [];
-
-    roomStyleArr.forEach((eachRoomStyle, index1) => {
-      // create the room objects with room numbers and the unavailable dates array
-      let roomStyleObj = {};
-      roomStyleObj.roomNumbers = [];
-      let roomNums = [];
-      let datesArray = [];
-      let name;
-      roomNumArr.forEach((eachRoom, index2) => {
-        let roomObj = {};
-
-        if (
-          eachRoomStyle.id_hotels == eachRoom.id_hotels &&
-          eachRoomStyle.id_roomStyles == eachRoom.id_roomStyles
-        ) {
-          roomObj.number = eachRoom.roomNumber;
-          roomObj.unavailableDates = datesArray;
-          roomNums.push(roomObj);
-          name = eachRoom.roomStylesNames;
-        }
-      });
-
-      // add the unavailable dates for each room
-      roomNums.forEach((room) => {
-        unavailableDatesArray.forEach((eachReservation) => {
-          if (
-            eachRoomStyle.id_hotels == eachReservation.id_hotels &&
-            eachRoomStyle.id_roomStyles == eachReservation.id_roomStyles
-          ) {
-            if (room.number == eachReservation.roomNumber) {
-              room.unavailableDates = [
-                ...room.unavailableDates,
-                ...reservationDates(
-                  eachReservation.check_in_date,
-                  eachReservation.check_out_date
-                ),
-              ];
-              room.unavailableDates =
-                room.unavailableDates.sort(compareNumbers);
-            }
-          }
-        });
-        roomStyleObj.roomNumbers.push(room);
-      });
-
-      // add all the room style photos
-      let picArray = [];
-      let pic_idArray = [];
-      roomStylePhotosArray.forEach((eachPhoto) => {
-        if (
-          eachRoomStyle.id_hotels == eachPhoto.id_hotels &&
-          eachRoomStyle.id_roomStyles == eachPhoto.id_roomStyles
-        ) {
-          picArray.push(eachPhoto.photos);
-          pic_idArray.push(eachPhoto.photo_id);
-        }
-      });
-
-      // add the hotel object
-      let hotelObj = {};
-      hotelObj.name = eachRoomStyle.name;
-      hotelObj.city = eachRoomStyle.cityName;
-
-      roomStyleObj.id_roomStyleDescription =
-        eachRoomStyle.id_roomStyleDescription;
-      roomStyleObj.title = name;
-      roomStyleObj.price = eachRoomStyle.price;
-      roomStyleObj.maxPeople = eachRoomStyle.maxPeople;
-      roomStyleObj.description = eachRoomStyle.description;
-      roomStyleObj.photos = picArray;
-      roomStyleObj.photo_id = pic_idArray;
-      roomStyleObj.hotel = hotelObj;
-
-      responseArray.push(roomStyleObj);
-    });
 
     // build the query to get all the booked room styles
     let qstring = "";
@@ -232,37 +140,35 @@ const stripeCheckout = async (req, res, next) => {
 
     // get the ids of the booked room styles
     q =
-      "SELECT * FROM roomnumbers INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription WHERE roomstyledescription.id_hotels = ? AND  roomnumbers.roomNumber IN ( " +
-      queryString +
-      " )";
+      "SELECT * FROM roomnumbers INNER JOIN roomstyledescription " + 
+       " ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription " + 
+       " INNER JOIN roomstyles ON roomstyles.id_roomStyles = roomstyledescription.id_roomStyles  " + 
+       " WHERE roomstyledescription.id_hotels = ? AND  roomnumbers.roomNumber IN ( " + queryString + " )";
     const [selectedRoomsArr, styleFields] = await mysqlConnection.execute(
       q,
       qvalues
     );
 
-    let roomTypeArray = [];
-    let styleCode = []
-    selectedRoomsArr.forEach((eachStyle) => {
-     
+    const sortedselectedRoomsArr = selectedRoomsArr.sort(compareRoomNumbers);
+    bookedRoomsDetails = [...sortedselectedRoomsArr]
 
-      // continue editing from here after breakfast
-      responseArray.forEach((eachRoomStyle) => {
-        if (eachStyle.id_roomStyleDescription == eachRoomStyle.id_roomStyleDescription) {
-          if (!styleCode.includes(eachStyle.id_roomStyleDescription)) {
-            styleCode.push(eachStyle.id_roomStyleDescription)
-            roomTypeArray.push(eachRoomStyle)
-          }
-        }
-        
-
-
-        // if (
-        //   eachStyle.id_roomStyleDescription ==
-        //   eachRoomStyle.id_roomStyleDescription
-        // ) {
-        //   roomTypeArray.push(eachRoomStyle);
-        // }
-      });
+    let line_items = [];
+    sortedselectedRoomsArr.forEach((oneRoom) => {
+      let sortedObj = {};
+      sortedObj.price_data = {
+        currency: "usd",
+        product_data: {
+          name: hotelArr[0].name,
+          description: oneRoom.roomStylesNames,
+          metadata: {
+            id: oneRoom.id_roomStyleDescription,
+            // city: roomType.hotel.city,
+          },
+        },
+        unit_amount: oneRoom.price * 100,
+      };
+      sortedObj.quantity = numberOfNights;
+      line_items.push({ ...sortedObj });
     });
 
 
@@ -275,41 +181,6 @@ const stripeCheckout = async (req, res, next) => {
         reservedDates: JSON.stringify(reservedDates),
       },
     });
-
-    // console.log('customer: ', customer)
-
-    let line_items = [];
-
-    // console.log("responseArray: ", responseArray)
-    // console.log("selectedRoomsArr: ", selectedRoomsArr)
-    // console.log("selectedRooms: ", selectedRooms)
-    // console.log("roomTypeArray: ", roomTypeArray)
-
-    selectedRooms.forEach((room) => {
-      roomTypeArray.forEach((roomType) => {
-        roomType.roomNumbers.forEach((roomNumber) => {
-          if (roomNumber.number == room) {
-            let Obj = {};
-            Obj.price_data = {
-              currency: "usd",
-              product_data: {
-                name: roomType.hotel.name,
-                description: roomType.title,
-                metadata: {
-                  id: roomType.id_roomStyleDescription,
-                  // city: roomType.hotel.city,
-                },
-              },
-              unit_amount: roomType.price * 100,
-            };
-            Obj.quantity = numberOfNights;
-            line_items.push({ ...Obj });
-          }
-        });
-      });
-    });
-
-    // console.log("line_items: ", line_items);
 
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
@@ -327,8 +198,15 @@ const stripeCheckout = async (req, res, next) => {
 
 
 
+
+
+
+
+
 const stripeWebHook = async (req, res, next) => {
+
   let signinSecret = process.env.SIGNING_SECRET;
+
   const payload = req.body;
 
   const sig = req.headers["stripe-signature"];
@@ -343,7 +221,7 @@ const stripeWebHook = async (req, res, next) => {
 
   try {
     if (event.type === "checkout.session.completed") {
-      // console.log("inside webhook");
+      console.log("inside webhook");
 
       const customer = await stripe.customers.retrieve(
         event.data.object.customer
@@ -351,32 +229,34 @@ const stripeWebHook = async (req, res, next) => {
 
       // console.log('customer: ', customer)
 
+      console.log(1);
+
       const selectedRooms = JSON.parse(customer.metadata.selectedRooms);
       const reservedDates = JSON.parse(customer.metadata.reservedDates);
       const user_id = customer.metadata.userId;
       const hotel_id = customer.metadata.hotel_id;
 
       const checkin_date = reservedDates[0];
-      const lastNight = reservedDates[reservedDates.length - 1];
+      // const lastNight = reservedDates[reservedDates.length - 1];
+      const checkout_date = reservedDates[reservedDates.length - 1];
 
-      const dateObj = new Date(lastNight);
-      dateObj.setDate(dateObj.getDate() + 1);
-      const checkout_date = dateObj;
-      // console.log("Check out date: ", dateObj);
-      // console.log("Check in date: ", checkin_date);
-      // console.log("last night: ", lastNight);
+      console.log("reservedDates: ", reservedDates);
+      console.log("checkout_date: ", checkout_date);
 
-      const numberOfNights = reservedDates.length;
+      const numberOfNights = reservedDates.length - 1;
 
       // get all room styles
       const mysqlConnection = await db();
 
+      console.log(2);
+
       // update the bookings table
-      q = "INSERT INTO bookings (id.users, id_hotels, createdAt) VALUES (?, ?, ?)";
+      q =
+        "INSERT INTO bookings (id_users, id_hotels, createdAt) VALUES (?, ?, ?)";
       const bookingResults = await mysqlConnection.execute(q, [
         user_id,
         hotel_id,
-        format(new Date().toLocaleString(), "yyyy-MM-dd hh-mm-ss bbb")
+        format(new Date().toLocaleString(), "yyyy-MM-dd HH:mm:ss"),
       ]);
       const id_bookings = bookingResults[0].insertId;
 
@@ -387,13 +267,15 @@ const stripeWebHook = async (req, res, next) => {
       ]);
       const lastBooking = bookingArr[0];
 
+      console.log(3);
+
       // build the query string to insert check-in and check-out dates
       let q2 = "";
       let values2 = [];
 
-      for (let i = 0; i < selectedStyleArr.length; i++) {
+      for (let i = 0; i < bookedRoomsDetails.length; i++) {
         q2 = q2 + "(?, ?, ?, ?), ";
-        values2.push(selectedStyleArr[i].id_roomNumbers);
+        values2.push(bookedRoomsDetails[i].id_roomNumbers);
         values2.push(id_bookings);
         values2.push(checkin_date);
         values2.push(checkout_date);
@@ -406,6 +288,8 @@ const stripeWebHook = async (req, res, next) => {
         "INSERT INTO unavailabledates (id_roomNumbers, id_bookings, check_in_date, check_out_date) VALUES " +
         queryString2;
       const unavailableDatesResults = await mysqlConnection.execute(q, values2);
+
+      console.log(4);
 
       // get the customer details
       q = "SELECT name, email FROM users WHERE id_users = ?";
@@ -422,12 +306,17 @@ const stripeWebHook = async (req, res, next) => {
       ]);
       const hotelDetails = hotelArr[0];
 
+      console.log(5);
+
       // get the booked rooms
       q =
-        "SELECT * FROM unavailabledates INNER JOIN roomnumbers ON unavailabledates.id_roomNumbers = roomnumbers.id_roomNumbers INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription INNER JOIN roomstyles ON roomstyles.id_roomStyles = roomstyledescription.id_roomStyles WHERE unavailabledates.id_bookings = ?";
+        "SELECT * FROM unavailabledates INNER JOIN roomnumbers ON unavailabledates.id_roomNumbers = roomnumbers.id_roomNumbers " + 
+        " INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription " + 
+        " INNER JOIN roomstyles ON roomstyles.id_roomStyles = roomstyledescription.id_roomStyles WHERE unavailabledates.id_bookings = ?";
       const [bookedRoomsArr, bookedRoomsArrFields] =
         await mysqlConnection.execute(q, [id_bookings]);
 
+      console.log(6);
       // get all the room numbers for this booking
       const bookedRoomNumbers = [];
       bookedRoomsArr.forEach((eachRoom) => {
@@ -436,6 +325,7 @@ const stripeWebHook = async (req, res, next) => {
 
       // build the customer receipt
       let newBooking = {};
+      newBooking.id_bookings = bookingArr[0].id_bookings
       newBooking.user = customerDetails;
       newBooking.hotel = hotelDetails;
       newBooking.createdAt = bookingArr[0].createdAt;
@@ -463,13 +353,29 @@ const stripeWebHook = async (req, res, next) => {
         });
       });
 
-   
+      console.log(7);
+      console.log("newBooking: ", newBooking);
+      // console.log("newBooking: ", format(newBooking.createdAt), "MMM/dd/yyyy,  hh-mm-ss bbb");
+      // console.log("newBooking: ", format(new Date(newBooking.createdAt)), "MMM/dd/yyyy,  hh-mm-ss bbb");
 
-      await sendOutMail(customerDetails, newBooking);
+      let htmlReceipt = ''
+      htmlReceipt = htmlReceipt + `<p>Booking reference: ${newBooking.id_bookings}</p>`
+      htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Customer name: ${customerDetails.name}</p>`
+      htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Hotel name: <strong>${hotelDetails.name}</strong></p>`
+      htmlReceipt = htmlReceipt + `<p>Booking date: ${formatDateAndTime(newBooking.createdAt)}</p><br/>`
+      newBooking.bookingDetails.forEach(detail => {
+        htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Room type: ${detail.room_type}</p>`
+        htmlReceipt = htmlReceipt + `<p>Price per night: $${detail.price_per_night}</p>`
+        htmlReceipt = htmlReceipt + `<p>Room number: ${detail.roomNumber}</p>`
+        htmlReceipt = htmlReceipt + `<p>Check-in date: ${formatDate(detail.checkin_date)}</p>`
+        htmlReceipt = htmlReceipt + `<p>Check-out date: ${formatDate(detail.checkout_date)}</p>`
+        htmlReceipt = htmlReceipt + `<p>Number of nights: ${detail.number_of_nights}</p><br/>`
+      })
+     
+
+      await sendOutMail(customerDetails, htmlReceipt);
     }
 
-    //   console.log(event.type)
-    //   console.log(event.data.object)
     return res.json({ received: true });
   } catch (err) {
     next(err);
@@ -480,4 +386,3 @@ module.exports = {
   stripeCheckout,
   stripeWebHook,
 };
-
