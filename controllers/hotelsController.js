@@ -8,6 +8,14 @@ const HotelType = require("./../models/hotelTypes");
 const db = require("./../utils/mysqlConnectionWithPromise");
 const configureQueryStr = require("./../utils/configureQueryString");
 const { format } = require("date-fns");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
 
 
 // function to get an array of all the intended reservation dates
@@ -846,6 +854,11 @@ const deleteHotel = async (req, res, next) => {
     // delete the hotel
     q = "DELETE FROM hotels WHERE id_hotels = ?";
     const results = await mysqlConnection.execute(q, [req.params.hotel_id]);
+
+      // delete the hotel photo from Cloudinary 
+      if (hotelArray[0].photo_id) {
+        await cloudinary.uploader.destroy(hotelArray[0].photo_id);
+      }
 
     // // check if there is any hotel left in the city
     // q = "SELECT * FROM hotels WHERE id_cities = ?";

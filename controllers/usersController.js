@@ -161,6 +161,11 @@ const deleteUser = async (req, res, next) => {
     const results = await mysqlConnection.execute(q, [user.id_users]);
     // console.log("results: ", results);
 
+      // delete the user photo from Cloudinary 
+      if (userArray[0].photo_id) {
+        await cloudinary.uploader.destroy(userArray[0].photo_id);
+      }
+
     res.status(204).json("User has been deleted");
   } catch (err) {
     next(err);

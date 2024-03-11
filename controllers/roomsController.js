@@ -6,6 +6,15 @@ const db = require("./../utils/mysqlConnectionWithPromise");
 const { format } = require("date-fns");
 const configureQueryStr = require("./../utils/configureQueryString");
 // const bookings = require("./../models/bookings");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
+
 
 // function to get an array of all the intended reservation dates
 const reservationDates = (firstDay, lastDay) => {
@@ -659,6 +668,10 @@ const deleteRoom = async (req, res, next) => {
       roomStyleArr[0].id_roomStyles,
     ]);
 
+    // get all the photos of this room style
+    q = "SELECT * FROM roomstylesphotos WHERE id_roomStyleDescription = ? "
+    const [roomStylePhotos] = await mysqlConnection.execute(q, [req.params.room_id])
+
     // console.log(2);
     // delete the room style
     q = "DELETE FROM roomstyledescription WHERE id_roomStyleDescription = ?";
@@ -678,6 +691,13 @@ const deleteRoom = async (req, res, next) => {
     if (bookingsArr.length > 0) {
       q = "DELETE FROM bookings WHERE id_bookings IN (" + queryString4 + ")";
       const results2 = await mysqlConnection.execute(q, qvalues3);
+    }
+
+     //delete the photos on Cloudinary
+     if (roomStylePhotos.length) {
+      for (let i = 0; i < roomStylePhotos.length; i++) {
+        await cloudinary.uploader.destroy(roomStylePhotos[i].photo_id);
+      }
     }
 
     // console.log(4);
