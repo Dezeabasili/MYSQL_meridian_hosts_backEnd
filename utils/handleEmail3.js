@@ -6,7 +6,7 @@ require('dotenv').config()
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const sendOutMail = async (newUser, data) => {
-    const names = ['Owerri', 'Aba']
+    
     try {
         // const filePath = await fsPromises.readFile(path.join(__dirname, '..', 'public', 'admin-005', 'customerPreferredProfilePhoto2.jpg'))
         // let buffer = Buffer.from(filePath, "utf-8").toString("base64")
@@ -24,7 +24,8 @@ const sendOutMail = async (newUser, data) => {
         const msg = {
             to: [
                 {
-                    email: "ezeabasili@yahoo.co.uk",
+                    email: "dezeabasili@gmail.com",
+                    // email: "ezeabasili@yahoo.co.uk",
                     // email: newUser.email,
                     name: newUser.name
                 }
