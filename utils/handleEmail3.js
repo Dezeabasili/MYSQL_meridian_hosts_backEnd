@@ -23,9 +23,8 @@ const sendOutMail = async (newUser, data) => {
 
         const msg = {
             to: [
-                {
-                    email: "dezeabasili@gmail.com",
-                    // email: "ezeabasili@yahoo.co.uk",
+                {                    
+                    email: "ezeabasili@yahoo.co.uk",
                     // email: newUser.email,
                     name: newUser.name
                 }
