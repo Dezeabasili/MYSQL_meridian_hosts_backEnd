@@ -13,13 +13,15 @@ const login = async (req, res, next) => {
     const username = req.body.username.toLowerCase()
     const mysqlConnection = await db()
     try {
+        // check if user forgot to provide username or password
         if (!pwd || !username) return next(createError('fail', 400, "forgot to type in your password or username"))
    
         //check if user exist
         const q = "SELECT * FROM users WHERE username = ?";
-        const [userArray, fields] = await mysqlConnection.execute(q, [username])
+        const [userArray] = await mysqlConnection.execute(q, [username])
         if (userArray.length == 0) return next(createError('fail', 401, "no user matches the provided information"))
         const user = userArray[0]
+
         // verify jwt
         const pwdCorrect = await bcrypt.compare(pwd, user.password)
         if (!pwdCorrect) return next(createError('fail', 401, 'Sorry, cannot log you in'))
@@ -46,18 +48,17 @@ const login = async (req, res, next) => {
 }
 
 
-// the next two request handlers are for users who forgot their passwords.
+// the following two request handlers are for users who forgot their passwords.
 // such users should be able to remember their registered emails.
 const forgotPassword = async (req, res, next) => {
     
     try {
         const mysqlConnection = await db()
-        // email address from the user is the only information known 
+
+        // get the user with the provided email 
         let q1 = "SELECT * FROM users WHERE email = ?"
-        const [userArray, fields] = await mysqlConnection.execute(q1, [req.body.email])
+        const [userArray] = await mysqlConnection.execute(q1, [req.body.email])
         if (userArray.length == 0) return next(createError("fail", 401, "This user does not exist"))
-        // const user = await User.findOne({ email: req.body.email })
-        // if (!user) return next(createError('fail', 404, 'this user does not exist'))
 
         // generate a random rest token
         const randomToken = crypto.randomBytes(32).toString('hex')
@@ -70,6 +71,7 @@ const forgotPassword = async (req, res, next) => {
         q1 = "UPDATE users SET `passwordResetToken` = ?, `passwordTokenExpiration` = ? WHERE id_users = ?"
         const results = await mysqlConnection.execute(q, [passwordResetToken, passwordTokenExpiration, user.id_users])
         if (results[0].affectedRows == 0) return next(createError("fail", 401, "This user does not exist"))
+
         // send the generated token to the user's email
         const passwordResetURL = `${process.env.CLIENT_URL}/resetpassword/${randomToken}/${user.id_users}`
         try {
@@ -77,6 +79,7 @@ const forgotPassword = async (req, res, next) => {
 
             res.status(200).json('Token sent to your email')
         } catch (err) {
+            // if the email fails, reset passwordResetToken and passwordTokenExpiration to null values
             q1 = "UPDATE users SET `passwordResetToken` = ?, `passwordTokenExpiration` = ? WHERE id_users = ?"
             const results = await mysqlConnection.execute(q, [null, null, user.id_users])
             return next(createError('fail', 500, 'Email was not sent. Please try again'))
@@ -90,9 +93,10 @@ const forgotPassword = async (req, res, next) => {
 const resetPassword = async (req, res, next) => {
     try {
         const mysqlConnection = await db()
+
         // get the user that owns the reset token
         let q1 = "SELECT * FROM users WHERE id_users = ?"
-        const [userArray, fields] = await mysqlConnection.execute(q1, [req.params.user_id])
+        const [userArray] = await mysqlConnection.execute(q1, [req.params.user_id])
         if (userArray.length == 0) return next(createError("fail", 401, "This user does not exist"))
         const user = userArray[0]
         const token = req.params.resettoken
@@ -127,14 +131,13 @@ const resetPassword = async (req, res, next) => {
 // the user is required to know his/her current password
 const changePassword = async (req, res, next) => {
     try {
-        // get the user with the user id
         const mysqlConnection = await db()
+
+        // get the user with the user id        
         let q1 = "SELECT * FROM users WHERE id_users = ?"
-        const [userArray, fields] = await mysqlConnection.execute(q1, [req.userInfo.id])
+        const [userArray] = await mysqlConnection.execute(q1, [req.userInfo.id])
         if (userArray.length == 0) return next(createError("fail", 401, "This user no longer exists"))
         const user = userArray[0]
-        // const loggedInUser = await User.findById(req.userInfo.id).select('+password')
-        // if (!loggedInUser) return next(createError('fail', 404, 'This user no longer exists'))
 
         // compare the provided password with the password in the database
         const pwdCorrect = await bcrypt.compare(req.body.currentPassword, user.password)
@@ -146,10 +149,7 @@ const changePassword = async (req, res, next) => {
         q1 = "UPDATE users SET `password` = ?, `passwordResetTime` = ? WHERE id_users = ?"
         const results = await mysqlConnection.execute(q1, [encryptedPassword, passwordResetTime, user.id_users])
         if (results[0].affectedRows == 0) return next(createError("fail", 401, "This user does not exist"))
-        // loggedInUser.password = encryptedPassword
-        // loggedInUser.passwordResetTime = new Date()
-        // await loggedInUser.save()
-
+       
         res.status(200).json("Password reset was successful. Please sign in with your new password ")
     } catch (err) {
         next(err)

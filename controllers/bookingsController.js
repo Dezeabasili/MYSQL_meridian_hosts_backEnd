@@ -7,7 +7,6 @@ const configureQueryStr = require("./../utils/configureQueryString");
 const { format } = require("date-fns");
 
 
-
 const getAllBookings = async (req, res, next) => {
   try {
     const mysqlConnection = await db();
@@ -15,39 +14,42 @@ const getAllBookings = async (req, res, next) => {
     let hotelValue = []
     let q;
     q =   "SELECT * FROM " + 
-          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt AS createdAt, hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
-          "INNER JOIN hotels ON bookings.id_hotels = hotels.id_hotels " +
-          "INNER JOIN cities ON hotels.id_cities = cities.id_cities) AS cte1 " +
-          "INNER JOIN " +
-          "(SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
-          "FROM unavailabledates INNER JOIN roomnumbers ON unavailabledates.id_roomNumbers = roomnumbers.id_roomNumbers " +
-          "INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription " +
-          "INNER JOIN roomstyles ON roomstyles.id_roomStyles = roomstyledescription.id_roomStyles) AS cte2 " +
-          "WHERE cte1.id_bookings = cte2.id_bookings"
+          " (SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt AS createdAt, " + 
+          " hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
+          " INNER JOIN hotels ON bookings.id_hotels = hotels.id_hotels " +
+          " INNER JOIN cities ON hotels.id_cities = cities.id_cities) AS cte1 " +
+          " INNER JOIN " +
+          " (SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, " + 
+          " unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
+          " FROM unavailabledates INNER JOIN roomnumbers ON unavailabledates.id_roomNumbers = roomnumbers.id_roomNumbers " +
+          " INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription " +
+          " INNER JOIN roomstyles ON roomstyles.id_roomStyles = roomstyledescription.id_roomStyles) AS cte2 " +
+          " WHERE cte1.id_bookings = cte2.id_bookings"
          
 
 
 
     if (req.query.hotel_id) {
       q =   "SELECT * FROM " + 
-          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt AS createdAt, hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
+          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt AS createdAt, " + 
+          " hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
           "INNER JOIN hotels ON bookings.id_hotels = hotels.id_hotels " +
           "INNER JOIN cities ON hotels.id_cities = cities.id_cities) AS cte1 " +
           "INNER JOIN " +
-          "(SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
+          "(SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, " + 
+          " unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
           "FROM unavailabledates INNER JOIN roomnumbers ON unavailabledates.id_roomNumbers = roomnumbers.id_roomNumbers " +
           "INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription " +
           "INNER JOIN roomstyles ON roomstyles.id_roomStyles = roomstyledescription.id_roomStyles) AS cte2 " + 
           "WHERE cte1.id_bookings = cte2.id_bookings AND cte1.id_hotels = ?"
-
       
       hotelValue.push(req.query.hotel_id)
     }
-    const [bookingsArray, bookingsFields] = await mysqlConnection.execute(q, hotelValue);
 
-    console.log("bookingsArray: ", bookingsArray)
+    const [bookingsArray] = await mysqlConnection.execute(q, hotelValue);
 
-    // get all the booking references
+    // Build the response object in accordance to what is expected at the Front End
+      // get all the booking references
     let responseArray = [];
     const allBookings = [];
     const bookingRef = [];
@@ -65,18 +67,15 @@ const getAllBookings = async (req, res, next) => {
         newBooking.bookingDetails = [];
         allBookings.push(newBooking);
         bookingRef.push(eachRoom.id_bookings);
-        // console.log("eachRoom.createdAt: ", eachRoom.createdAt)
       }
     });
 
-    allBookings.forEach((selectedRef, index1) => {
-      bookingsArray.forEach((roomType, index2) => {
-        // roomType.roomNumbers.forEach((roomNumber, index3) => {
-        // if (roomNumber.number == selectedRef) {
+    allBookings.forEach((selectedRef) => {
+      bookingsArray.forEach((roomType) => {
+
         if (roomType.id_bookings == selectedRef.id_bookings) {
           let roomDetails = {};
           roomDetails.roomType_id = roomType.id_roomStyleDescription;
-          // roomDetails.room_id = selectedRef;
           roomDetails.roomNumber = roomType.roomNumber;
           roomDetails.checkin_date = roomType.check_in_date;
           roomDetails.checkout_date = roomType.check_out_date;
@@ -86,14 +85,10 @@ const getAllBookings = async (req, res, next) => {
 
           selectedRef.bookingDetails.push(roomDetails);
 
-          // newBooking.bookingDetails.push({ ...roomDetails });
         }
-        // });
       });
       responseArray.push({ ...selectedRef });
     });
-
-    // console.log("responseArray: ", responseArray)
 
     res.status(200).json({
       number: responseArray.length,
@@ -104,24 +99,27 @@ const getAllBookings = async (req, res, next) => {
   }
 };
 
+
 const getMyBookings = async (req, res, next) => {
   try {
     const mysqlConnection = await db();
 
     let q;
     q =   "SELECT * FROM " + 
-          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt, hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
+          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt, " + 
+          " hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
           "INNER JOIN hotels ON bookings.id_hotels = hotels.id_hotels " +
           "INNER JOIN cities ON hotels.id_cities = cities.id_cities) AS cte1 " +
           "INNER JOIN " +
-          "(SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
+          "(SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, " + 
+          " unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
           "FROM unavailabledates INNER JOIN roomnumbers ON unavailabledates.id_roomNumbers = roomnumbers.id_roomNumbers " +
           "INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription " +
           "INNER JOIN roomstyles ON roomstyles.id_roomStyles = roomstyledescription.id_roomStyles) AS cte2 " + 
           "WHERE cte1.id_bookings = cte2.id_bookings AND cte1.userId = ?"
 
 
-    const [bookingsArray, bookingsFields] = await mysqlConnection.execute(q, [
+    const [bookingsArray] = await mysqlConnection.execute(q, [
       req.userInfo.id,
     ]);
 
@@ -151,15 +149,12 @@ const getMyBookings = async (req, res, next) => {
     });
 
 
+    allBookings.forEach((selectedRef) => {
+      bookingsArray.forEach((roomType) => {
 
-    allBookings.forEach((selectedRef, index1) => {
-      bookingsArray.forEach((roomType, index2) => {
-        // roomType.roomNumbers.forEach((roomNumber, index3) => {
-        // if (roomNumber.number == selectedRef) {
         if (roomType.id_bookings == selectedRef.id_bookings) {
           let roomDetails = {};
           roomDetails.roomType_id = roomType.id_roomStyleDescription;
-          // roomDetails.room_id = selectedRef;
           roomDetails.roomNumber = roomType.roomNumber;
           roomDetails.checkin_date = roomType.check_in_date;
           roomDetails.checkout_date = roomType.check_out_date;
@@ -169,9 +164,7 @@ const getMyBookings = async (req, res, next) => {
 
           selectedRef.bookingDetails.push(roomDetails);
 
-          // newBooking.bookingDetails.push({ ...roomDetails });
         }
-        // });
       });
       responseArray.push({ ...selectedRef });
     });
@@ -187,7 +180,9 @@ const getMyBookings = async (req, res, next) => {
 
 };
 
+
 const findCustomerBooking = async (req, res, next) => {
+  // either booking reference or customer email if provided
   try {
     const mysqlConnection = await db();
 
@@ -195,21 +190,20 @@ const findCustomerBooking = async (req, res, next) => {
     if (req.body.booking_id) {
       let q;
       q =   "SELECT * FROM " + 
-          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt, hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
+          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt, hotels.name, " + 
+          " hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
           "INNER JOIN hotels ON bookings.id_hotels = hotels.id_hotels " +
           "INNER JOIN cities ON hotels.id_cities = cities.id_cities) AS cte1 " +
           "INNER JOIN " +
-          "(SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
+          "(SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, " + 
+          " unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
           "FROM unavailabledates INNER JOIN roomnumbers ON unavailabledates.id_roomNumbers = roomnumbers.id_roomNumbers " +
           "INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription " +
           "INNER JOIN roomstyles ON roomstyles.id_roomStyles = roomstyledescription.id_roomStyles) AS cte2 " + 
           "WHERE cte1.id_bookings = cte2.id_bookings AND cte1.id_bookings = ?"
 
 
-
-
-
-      const [bookingsArray2, bookingsFields] = await mysqlConnection.execute(q, [
+      const [bookingsArray2] = await mysqlConnection.execute(q, [
         req.body.booking_id,
       ]);
 
@@ -221,18 +215,20 @@ const findCustomerBooking = async (req, res, next) => {
     } else if (req.body.email) {
         let q;
         q =   "SELECT * FROM " + 
-          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt, hotels.name, hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
+          "(SELECT users.email, users.name AS customer, users.id_users AS userId, bookings.id_bookings AS id_bookings, bookings.createdAt, hotels.name, " + 
+          " hotels.id_hotels, cities.cityName FROM users INNER JOIN bookings ON users.id_users = bookings.id_users " + 
           "INNER JOIN hotels ON bookings.id_hotels = hotels.id_hotels " +
           "INNER JOIN cities ON hotels.id_cities = cities.id_cities) AS cte1 " +
           "INNER JOIN " +
-          "(SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
+          "(SELECT unavailabledates.check_in_date, unavailabledates.check_out_date, DATEDIFF(unavailabledates.check_out_date, unavailabledates.check_in_date) AS number_of_nights, " + 
+          " unavailabledates.id_bookings AS id_bookings, roomnumbers.roomNumber, roomstyledescription.price, roomstyledescription.id_roomStyleDescription, roomstyles.roomStylesNames " +
           "FROM unavailabledates INNER JOIN roomnumbers ON unavailabledates.id_roomNumbers = roomnumbers.id_roomNumbers " +
           "INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription " +
           "INNER JOIN roomstyles ON roomstyles.id_roomStyles = roomstyledescription.id_roomStyles) AS cte2 " + 
           "WHERE cte1.id_bookings = cte2.id_bookings AND cte1.email = ?"
 
 
-      const [bookingsArray3, bookingsFields] = await mysqlConnection.execute(q, [
+      const [bookingsArray3] = await mysqlConnection.execute(q, [
         req.body.email
       ]);
 
@@ -266,15 +262,12 @@ const findCustomerBooking = async (req, res, next) => {
       });
   
   
-  
       allBookings.forEach((selectedRef, index1) => {
         bookingsArray.forEach((roomType, index2) => {
-          // roomType.roomNumbers.forEach((roomNumber, index3) => {
-          // if (roomNumber.number == selectedRef) {
+
           if (roomType.id_bookings == selectedRef.id_bookings) {
             let roomDetails = {};
             roomDetails.roomType_id = roomType.id_roomStyleDescription;
-            // roomDetails.room_id = selectedRef;
             roomDetails.roomNumber = roomType.roomNumber;
             roomDetails.checkin_date = roomType.check_in_date;
             roomDetails.checkout_date = roomType.check_out_date;
@@ -284,28 +277,11 @@ const findCustomerBooking = async (req, res, next) => {
   
             selectedRef.bookingDetails.push(roomDetails);
   
-            // newBooking.bookingDetails.push({ ...roomDetails });
           }
-          // });
+
         });
         responseArray.push({ ...selectedRef });
       });
-
-    // let bookings = [];
-    // if (req.body.booking_id) {
-    //   const userbooking = await Booking.findById(req.body.booking_id);
-    //   if (!userbooking)
-    //     return next(createError("fail", 404, "the booking does not exist"));
-    //   bookings.push(userbooking);
-    // } else if (req.body.email) {
-    //   const user = await User.findOne({ email: req.body.email });
-    //   if (!user)
-    //     return next(createError("fail", 404, "this user email does not exist"));
-    //   // find all the bookings for this user
-    //   bookings = await Booking.find({ user: user._id });
-    //   if (!bookings)
-    //     return next(createError("fail", 404, "the booking does not exist"));
-    // }
 
     res.status(200).json({ data: responseArray });
   } catch (err) {
