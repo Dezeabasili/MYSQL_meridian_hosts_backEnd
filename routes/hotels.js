@@ -19,9 +19,9 @@ router.get('/hotelswithin/:distance/center/:latlng/unit/:unit', hotelsController
 
 router.get('/hotelsdistances/center/:latlng/unit/:unit', hotelsController.getDistances)
 
-router.get('/countbycity/cityname', hotelsController.countByCity)
+// router.get('/countbycity/cityname', hotelsController.countByCity)
 router.get('/countbycity', hotelsController.countByCityNew)
-router.get('/countbytype/all', hotelsController.countByType)
+// router.get('/countbytype/all', hotelsController.countByType)
 router.get('/countbytype', hotelsController.countByTypeNew)
 router.get('/room/:hotel_id', hotelsController.getHotelRooms)
 router.get('/allcityrefs', hotelsController.getAllHotelCityRefs)
