@@ -26,6 +26,8 @@ const stripeRouter = require("./routes/stripe");
 const bookingsRouter = require("./routes/bookings");
 const picturesRouter = require("./routes/pictures");
 const createError = require("./utils/error");
+const schedule = require("node-schedule")
+const sendMorningReport = require('./utils/morningReports')
 const app = express();
 const PORT = process.env.PORT || 4000
 
@@ -184,6 +186,12 @@ app.use((err, req, res, next) => {
     error: err,
   });
 });
+
+// repeat task
+schedule.scheduleJob('*/10 * * * *', async () => {
+  await sendMorningReport()
+  // console.log("Task complete")
+})
 
 const server = app.listen(PORT, () => {
   // connect();

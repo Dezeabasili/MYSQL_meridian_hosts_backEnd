@@ -95,9 +95,4 @@ const sendMorningReport = async () => {
         
 }
 
-
-// repeat task
-schedule.scheduleJob('*/10 * * * *', async () => {
-    await sendMorningReport()
-    // console.log("Task complete")
-})
+module.exports = sendMorningReport
