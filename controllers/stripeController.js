@@ -374,16 +374,6 @@ const stripeWebHook = async (req, res, next) => {
         htmlReceipt = htmlReceipt + `<p>Number of nights: ${detail.number_of_nights}</p><br/>`
       })
 
-      /*
-
-      format(
-                      new Date(booking.createdAt),
-                      "MMM/dd/yyyy,  hh-mm-ss bbb"
-                    )
-
-
-      */
-     
 
       await sendOutMail(customerDetails, htmlReceipt);
     }
