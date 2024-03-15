@@ -1,7 +1,9 @@
-const { format } = require("date-fns");
+const date = new Date()
 
-let examp = new Date().toLocaleString()
-let examp2 = format(new Date(), "yyyy-MM-dd")
-let examp3 = format(new Date().toLocaleString(), "yyyy-MM-dd hh-mm-ss bbb")
-
-console.log(examp, examp2, examp3)
+console.log(
+    new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'full',
+      timeStyle: 'long',
+      timeZone: 'CST',
+    }).format(date),
+  );

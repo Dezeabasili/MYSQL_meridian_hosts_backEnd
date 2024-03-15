@@ -358,12 +358,30 @@ const stripeWebHook = async (req, res, next) => {
       // console.log("newBooking: ", format(newBooking.createdAt), "MMM/dd/yyyy,  hh-mm-ss bbb");
       // console.log("newBooking: ", format(new Date(newBooking.createdAt)), "MMM/dd/yyyy,  hh-mm-ss bbb");
 
+      /*
+
+      new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'full',
+      timeStyle: 'long',
+      timeZone: 'CST',
+    }).format(date),
+
+
+      */
+
+    const bookingDate = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'full',
+      timeStyle: 'long',
+      timeZone: 'CST',
+    }).format(newBooking.createdAt)
+
       let htmlReceipt = ''
       htmlReceipt = htmlReceipt + `<p>Booking reference: ${newBooking.id_bookings}</p>`
       htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Customer name: ${customerDetails.name}</p>`
       htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Hotel name: <strong>${hotelDetails.name}</strong></p>`
       // htmlReceipt = htmlReceipt + `<p>Booking date: ${formatDateAndTime(newBooking.createdAt)}</p><br/>`
       htmlReceipt = htmlReceipt + `<p>Booking date: ${format(new Date(newBooking.createdAt), "MMM/dd/yyyy,  hh-mm-ss bbb")}</p><br/>`
+      htmlReceipt = htmlReceipt + `<p>Booking date: ${bookingDate}</p><br/>`
       newBooking.bookingDetails.forEach(detail => {
         htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Room type: ${detail.room_type}</p>`
         htmlReceipt = htmlReceipt + `<p>Price per night: $${detail.price_per_night}</p>`
