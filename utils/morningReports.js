@@ -76,8 +76,8 @@ const sendMorningReport = async () => {
 
 
           htmlReceipt = htmlReceipt + `<p>Booking reference: ${newBooking.id_bookings}</p>`
-          htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Customer name: ${customerDetails.name}</p>`
-          htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Hotel name: <strong>${hotelDetails.name}</strong></p>`
+          htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Customer name: ${newBooking.customer}</p>`
+          htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Hotel name: <strong>${newBooking.name}</strong></p>`
           htmlReceipt = htmlReceipt + `<p>Booking date: ${bookingDate}</p><br/>`
           newBooking.bookingDetails.forEach(detail => {
             htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Room type: ${detail.room_type}</p>`
