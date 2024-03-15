@@ -188,10 +188,9 @@ app.use((err, req, res, next) => {
 });
 
 // repeat task
-schedule.scheduleJob('*/10 * * * *', async () => {
-  await sendMorningReport()
-  // console.log("Task complete")
-})
+// schedule.scheduleJob('*/10 * * * *', async () => {
+//   await sendMorningReport()
+// })
 
 const server = app.listen(PORT, () => {
   // connect();
