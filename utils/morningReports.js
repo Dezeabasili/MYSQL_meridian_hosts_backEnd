@@ -21,6 +21,10 @@ const sendMorningReport = async () => {
           const [bookingsArray] = await mysqlConnection.execute(q, []);      
 
            // Build the response object in accordance to what is expected at the Front End
+
+           let customerDetails = {}
+           customerDetails.name = "Don Eze";
+           customerDetails.email = "ezeabasili@yahoo.co.uk"
       // get all the booking references
     let responseArray = [];
     const allBookings = [];
@@ -87,11 +91,9 @@ const sendMorningReport = async () => {
           htmlReceipt = htmlReceipt + `<br/><br/>`
     })
 
-    let manager = {}
-    manager.name = "Don Eze";
-    manager.email = "ezeabasili@yahoo.co.uk"
+   
 
-    await sendOutMail(manager, htmlReceipt);
+    await sendOutMail(customerDetails, htmlReceipt);
         
 }
 
