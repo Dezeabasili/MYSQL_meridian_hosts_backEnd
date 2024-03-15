@@ -364,8 +364,6 @@ const stripeWebHook = async (req, res, next) => {
       htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Hotel name: <strong>${hotelDetails.name}</strong></p>`
       // htmlReceipt = htmlReceipt + `<p>Booking date: ${formatDateAndTime(newBooking.createdAt)}</p><br/>`
       htmlReceipt = htmlReceipt + `<p>Booking date: ${format(new Date(newBooking.createdAt), "MMM/dd/yyyy,  hh-mm-ss bbb")}</p><br/>`
-      htmlReceipt = htmlReceipt + `<p>Booking date: ${format(newBooking.createdAt, "MMM/dd/yyyy,  hh-mm-ss bbb")}</p><br/>`
-      htmlReceipt = htmlReceipt + `<p>Booking date: ${JSON.stringify(newBooking.createdAt)}</p><br/>`
       newBooking.bookingDetails.forEach(detail => {
         htmlReceipt = htmlReceipt + `<p style="text-transform: capitalize">Room type: ${detail.room_type}</p>`
         htmlReceipt = htmlReceipt + `<p>Price per night: $${detail.price_per_night}</p>`
