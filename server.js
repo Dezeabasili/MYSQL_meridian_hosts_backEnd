@@ -188,7 +188,7 @@ app.use((err, req, res, next) => {
 });
 
 // repeat task
-schedule.scheduleJob('*/10 * * * *', async () => {
+schedule.scheduleJob('0 6 * * *', async () => {
   await sendMorningReport()
 })
 

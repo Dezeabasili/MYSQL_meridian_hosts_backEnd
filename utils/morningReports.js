@@ -75,7 +75,7 @@ const sendMorningReport = async () => {
       responseArray.push({ ...selectedRef });
     });
 
-    let htmlReceipt = ''
+    let htmlReceipt = `<h4>Total number of bookings: ${responseArray.length}</h4><br/><br/>`
     responseArray.forEach(newBooking => {
         const bookingDate = new Intl.DateTimeFormat('en-US', {
             dateStyle: 'full',
