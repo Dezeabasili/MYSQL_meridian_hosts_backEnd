@@ -412,7 +412,8 @@ const updateRoom = async (req, res, next) => {
 
       // get bookings to delete
       q =
-        "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription  INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomnumbers.roomNumber IN ( " +
+        "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription  INNER JOIN unavailabledates " + 
+        " ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomnumbers.roomNumber IN ( " +
         queryString3 +
         " )";
       const [roomsToDeleteArray] = await mysqlConnection.execute(
@@ -496,7 +497,8 @@ const deleteRoom = async (req, res, next) => {
     // console.log(1);
     // get all the bookings associated with this room style
     q =
-      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
+      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription " + 
+      " INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
     const [bookingsArr] = await mysqlConnection.execute(q, [
       roomStyleArr[0].id_hotels,
       roomStyleArr[0].id_roomStyles,
@@ -591,7 +593,8 @@ const getRoom = async (req, res, next) => {
     // console.log(12);
     // get all the room numbers associated with the updated room style
     q =
-      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN roomstyles ON roomstyledescription.id_roomStyles = roomstyles.id_roomStyles   WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
+      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN roomstyles " + 
+      " ON roomstyledescription.id_roomStyles = roomstyles.id_roomStyles   WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
     const [roomNumArr] = await mysqlConnection.execute(q, [
       updatedRoomStyle.id_hotels,
       updatedRoomStyle.id_roomStyles,
@@ -602,7 +605,8 @@ const getRoom = async (req, res, next) => {
 
     // get the unavailable dates for every room of this room style
     q =
-      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
+      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN unavailabledates " + 
+      " ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
     const [unavailableDatesArray] = await mysqlConnection.execute(q, [
       updatedRoomStyle.id_hotels,
       updatedRoomStyle.id_roomStyles,
@@ -612,7 +616,8 @@ const getRoom = async (req, res, next) => {
 
     // get all the room style photos
     q =
-      "SELECT * FROM roomstylesphotos INNER JOIN roomstyledescription ON roomstylesphotos.id_roomstyleDescription = roomstyledescription.id_roomstyleDescription WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
+      "SELECT * FROM roomstylesphotos INNER JOIN roomstyledescription ON roomstylesphotos.id_roomstyleDescription = roomstyledescription.id_roomstyleDescription " + 
+      " WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
     const [roomStylePhotosArray] = await mysqlConnection.execute(q, [
       updatedRoomStyle.id_hotels,
       updatedRoomStyle.id_roomStyles,
@@ -810,7 +815,7 @@ const getAllRooms = async (req, res, next) => {
       responseArray.push(roomStyleObj);
     });
 
-    // console.log("responseArray: ", responseArray)
+    console.log("responseArray: ", responseArray)
 
     res.status(200).json({
       number: responseArray.length,

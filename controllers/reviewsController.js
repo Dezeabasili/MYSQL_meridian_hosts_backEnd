@@ -7,13 +7,30 @@ const db = require("./../utils/mysqlConnectionWithPromise");
 const { format } = require("date-fns");
 const configureQueryStr = require("./../utils/configureQueryString");
 
+// Build the response object in accordance to what is expected at the Front End
+const reviewResp = (clientReview) => {
+  let reviewObj = {}
+    let hotel = {}
+    let customer = {}
+    hotel.name = clientReview.hotelName
+    customer.name = clientReview.customerName
+    reviewObj.id_reviews = clientReview.id_reviews
+    reviewObj.review = clientReview.review
+    reviewObj.rating = clientReview.rating
+    reviewObj.createdAt = clientReview.createdAt
+    reviewObj.hotel = hotel
+    reviewObj.customer = customer
+
+    return reviewObj
+}
+
 // create review
 const createReview = async (req, res, next) => {
   try {
     const mysqlConnection = await db();
     // confirm the booking ref exists
     let q = "SELECT * FROM bookings WHERE id_bookings = ?"
-    const [customerBookingArr, bookingFields] = await mysqlConnection.execute(q, [req.body.bookingRef * 1])
+    const [customerBookingArr] = await mysqlConnection.execute(q, [req.body.bookingRef * 1])
     if (customerBookingArr.length == 0)
         return next(createError("fail", 404, "The booking reference provided does not exist"));
 
@@ -21,6 +38,14 @@ const createReview = async (req, res, next) => {
     if (customerBookingArr[0].id_users != req.userInfo.id) {
       return next(createError("fail", 400, "You are not the customer who made the reservation"))
     }
+
+    // check if this customer has written a review with the same booking reference
+    q = "SELECT * FROM reviews INNER JOIN bookings ON reviews.id_bookings = bookings.id_bookings " + 
+    " WHERE bookings.id_bookings = ? AND bookings.id_users = ?"
+    const [reviewsArr] = await mysqlConnection.execute(q, [req.body.bookingRef * 1, req.userInfo.id])
+    if (reviewsArr.length > 0)
+        return next(createError("fail", 400, "You already have a review with this booking reference"));
+
 
     // insert the review 
     q = "INSERT INTO reviews (review, rating, id_bookings, createdAt) VALUES (?, ?, ?, ?)"
@@ -31,20 +56,9 @@ const createReview = async (req, res, next) => {
     let outputString ="reviews.id_reviews, reviews.review, reviews.rating, reviews.createdAt, hotels.id_hotels, hotels.name AS hotelName, users.name AS customerName";
  
     q= "SELECT " + outputString + " FROM reviews INNER JOIN bookings ON reviews.id_bookings = bookings.id_bookings INNER JOIN users ON users.id_users = bookings.id_users INNER JOIN hotels ON hotels.id_hotels = bookings.id_hotels WHERE id_reviews = ?"
-    const [reviewArr, reviewFields] = await mysqlConnection.execute(q, [reviewId])
+    const [reviewArr] = await mysqlConnection.execute(q, [reviewId])
 
-    // build the response obj
-    let reviewObj = {}
-    let hotel = {}
-    let customer = {}
-    hotel.name = reviewArr[0].hotelName
-    customer.name = reviewArr[0].customerName
-    reviewObj.id_reviews = reviewArr[0].id_reviews
-    reviewObj.review = reviewArr[0].review
-    reviewObj.rating = reviewArr[0].rating
-    reviewObj.createdAt = reviewArr[0].createdAt
-    reviewObj.hotel = hotel
-    reviewObj.customer = customer
+    const responseObj = reviewResp(reviewArr[0])
 
     // calculate the average rating and the number of ratings for the hotel
     q = "SELECT AVG(rating) AS aveRatings, COUNT(rating) AS numOfRatings  FROM reviews INNER JOIN bookings ON reviews.id_bookings = bookings.id_bookings GROUP BY id_hotels HAVING id_hotels = ?"
@@ -57,7 +71,7 @@ const createReview = async (req, res, next) => {
 
     res.status(201).json({
       status: "success",
-      data: reviewObj,
+      data: responseObj,
     });
   } catch (err) {
     next(err);
@@ -78,46 +92,14 @@ const getAllReviews = async (req, res, next) => {
       values.push(req.query.review_id)
     }
 
-    const [reviewArr, reviewFields] = await mysqlConnection.execute(q, values)
+    const [reviewArr] = await mysqlConnection.execute(q, values)
 
     let responseArr = []
     reviewArr.forEach(eachArray => {
-      // build the response obj
-    let reviewObj = {}
-    let hotel = {}
-    let customer = {}
-    hotel.name = eachArray.hotelName
-    customer.name = eachArray.customerName
-    reviewObj.id_reviews = eachArray.id_reviews
-    reviewObj.review = eachArray.review
-    reviewObj.rating = eachArray.rating
-    reviewObj.createdAt = eachArray.createdAt
-    reviewObj.hotel = hotel
-    reviewObj.customer = customer
-
-    responseArr.push(reviewObj)
+    responseArr.push(reviewResp(eachArray))
 
     })
 
-
-
-    // This first two lines of code will modify the filter to get all reviews for
-    // a particular hotel. If filterObject is empty, then we get all the reviews for all the hotels
-    // let filterObject = {};
-    // if (req.params.hotel_id) filterObject.hotel = req.params.hotel_id;
-    // if (req.query.review_id) filterObject._id = req.query.review_id;
-    // if (req.body.email) {
-    //   const user = await User.findOne({ email: req.body.email });
-    //   if (!user)
-    //     return next(createError("fail", 404, "This user does not exist"));
-    //   filterObject.customer = user._id;
-    // }
-
-
-
-    // const reviews = await Review.find(filterObject)
-    //   .populate({ path: "hotel", select: "name" })
-    //   .populate({ path: "customer", select: "name" });
     res.status(200).json({
       results: responseArr.length,
       status: "success",
@@ -134,34 +116,14 @@ const getAllMyReviews = async (req, res, next) => {
 
     let outputString ="reviews.id_reviews, reviews.review, reviews.rating, reviews.createdAt, hotels.name AS hotelName, users.name AS customerName";
     let q= "SELECT " + outputString + " FROM reviews INNER JOIN bookings ON reviews.id_bookings = bookings.id_bookings INNER JOIN users ON users.id_users = bookings.id_users INNER JOIN hotels ON hotels.id_hotels = bookings.id_hotels WHERE users.id_users = ?"
-    const [reviewArr, reviewFields] = await mysqlConnection.execute(q, [req.userInfo.id])
+    const [reviewArr] = await mysqlConnection.execute(q, [req.userInfo.id])
 
     let responseArr = []
     reviewArr.forEach(eachArray => {
-      // build the response obj
-    let reviewObj = {}
-    let hotel = {}
-    let customer = {}
-    hotel.name = eachArray.hotelName
-    customer.name = eachArray.customerName
-    reviewObj.id_reviews = eachArray.id_reviews
-    reviewObj.review = eachArray.review
-    reviewObj.rating = eachArray.rating
-    reviewObj.createdAt = eachArray.createdAt
-    reviewObj.hotel = hotel
-    reviewObj.customer = customer
-
-    responseArr.push(reviewObj)
+    responseArr.push(reviewResp(eachArray))
 
     })
 
-
-  
-    // const reviews = await Review.find({customer: req.userInfo.id})
-    //   .populate({ path: "hotel", select: "name" })
-    //   .populate({ path: "customer", select: "name" });
-    // console.log('review: ', reviews)
-    
     res.status(200).json({
       results: responseArr.length,
       status: "success",
@@ -227,9 +189,6 @@ const updateReview = async (req, res, next) => {
     q = "UPDATE hotels SET `ratingsAverage` = ?, `numberOfRatings` = ?  WHERE id_hotels = ?"
     const hotelResults = await mysqlConnection.execute(q, [hotelStats[0]?.aveRatings || 4.5, hotelStats[0]?.numOfRatings || 0, reviewArr[0].id_hotels])
  
-
-
-
     res.status(201).json({
       status: "success"
     });
@@ -252,21 +211,9 @@ const deleteReview = async (req, res, next) => {
         createError("fail", 404, "The review you specified does not exist")
       );
 
-
-
-    // // check if the review exist
-    // q = "SELECT * FROM reviews WHERE id_reviews = ?"
-    // const [reviewsArr, reviewFields] = await mysqlConnection.execute(q, [req.params.review_id])
-    // if (reviewsArr.length == 0)
-    //   return next(
-    //     createError("fail", 404, "The review you specified does not exist")
-    //   );
-
     q = "DELETE FROM reviews WHERE id_reviews = ?"
     const deleteResults = await mysqlConnection.execute(q, [req.params.review_id])
     // console.log("deleteResults: ", deleteResults)
-
-
     
     // calculate the average rating and the number of ratings for the hotel
     q = "SELECT AVG(rating) AS aveRatings, COUNT(rating) AS numOfRatings  FROM reviews INNER JOIN bookings ON reviews.id_bookings = bookings.id_bookings GROUP BY id_hotels HAVING id_hotels = ?"
@@ -275,8 +222,6 @@ const deleteReview = async (req, res, next) => {
     // update the average ratings and the number of ratings for the hotel
     q = "UPDATE hotels SET `ratingsAverage` = ?, `numberOfRatings` = ?  WHERE id_hotels = ?"
     const hotelResults = await mysqlConnection.execute(q, [hotelStats[0]?.aveRatings || 4.5, hotelStats[0]?.numOfRatings || 0, reviewArr[0].id_hotels])
- 
-
    
     res.status(204).json({
       status: "success",

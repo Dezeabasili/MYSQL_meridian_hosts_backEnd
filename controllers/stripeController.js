@@ -9,23 +9,6 @@ const db = require("./../utils/mysqlConnectionWithPromise");
 const configureQueryStr = require("./../utils/configureQueryString");
 const { format } = require("date-fns");
 
-// function GFG_Fun() {
-//   let date = new Date();
-
-//   console.log(
-//     "MySQL datetime - " +
-//       date.toISOString().split("T")[0] +
-//       " " +
-//       date.toTimeString().split(" ")[0]
-//   );
-// }
-
-// function GFG_Fun2() {
-//   let date = new Date();
-//   console.log(
-//     "MySQL datetime - " + date.toISOString().slice(0, 19).replace("T", " ")
-//   );
-// }
 
 // function to format date
 const formatDate = (value) => {
@@ -37,75 +20,10 @@ const formatDate = (value) => {
 }
 
 
-// function to format date
-const formatDateAndTime = (value) => {
-  let date = new Date(value);
-  const day = date.toLocaleString('default', { day: '2-digit' });
-  const month = date.toLocaleString('default', { month: 'short' });
-  const year = date.toLocaleString('default', { year: 'numeric' });
-  const time = date.toLocaleString('default', { timeStyle: 'short' });
-  return day + '-' + month + '-' + year + '  ' + time;
-}
-
-
 // function to sort dates
 const compareRoomNumbers = (a, b) => {
   return a.roomNumber - b.roomNumber;
 };
-
-// const updateRoomAvailability = async (room_id, reservedDates) => {
-//   // console.log(req.body.reservedDates)
-
-//   const compareNumbers = (a, b) => {
-//     return new Date(a).getTime() - new Date(b).getTime();
-//   };
-//   try {
-//     // get the room style to update
-//     const roomStyle = await Room.findOne({ "roomNumbers._id": room_id });
-//     // console.log(roomStyle)
-//     // get the room to update
-//     // console.log(roomStyle.roomNumbers[0]?._id)
-//     const room = roomStyle.roomNumbers.find(({ _id }) => _id == room_id);
-//     // console.log(room)
-
-//     // update the unavailable dates for the room
-//     const unavailableDates = room.unavailableDates.concat(reservedDates);
-//     // console.log(unavailableDates)
-//     if (unavailableDates.length >= 2) {
-//       unavailableDates.sort(compareNumbers);
-//     }
-
-//     // room.unavailableDates = [...unavailableDates]
-//     roomStyle.roomNumbers = roomStyle.roomNumbers.map((roomNumber) => {
-//       if (roomNumber._id == room_id) {
-//         return {
-//           ...roomNumber,
-//           unavailableDates: [...unavailableDates],
-//         };
-//       } else return roomNumber;
-//     });
-
-//     // console.log(roomStyle)
-
-//     await Room.updateOne(
-//       { "roomNumbers._id": room_id },
-//       {
-//         $set: {
-//           "roomNumbers.$.unavailableDates": unavailableDates,
-//         },
-//       }
-//     );
-
-//     // save the updated room
-//     // await roomStyle.save();
-//   } catch (err) {
-//     console.log(err);
-//   }
-// };
-
-
-
-
 
 
 
@@ -195,12 +113,6 @@ const stripeCheckout = async (req, res, next) => {
     next(err);
   }
 };
-
-
-
-
-
-
 
 
 const stripeWebHook = async (req, res, next) => {
@@ -334,12 +246,9 @@ const stripeWebHook = async (req, res, next) => {
 
       bookedRoomNumbers.forEach((selectedRoom, index1) => {
         bookedRoomsArr.forEach((roomType, index2) => {
-          // roomType.roomNumbers.forEach((roomNumber, index3) => {
-          // if (roomNumber.number == selectedRoom) {
           if (roomType.roomNumber == selectedRoom) {
             let roomDetails = {};
             roomDetails.roomType_id = roomType.id_roomStyleDescription;
-            // roomDetails.room_id = selectedRoom;
             roomDetails.roomNumber = roomType.roomNumber;
             roomDetails.checkin_date = roomType.check_in_date;
             roomDetails.checkout_date = roomType.check_out_date;

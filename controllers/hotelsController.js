@@ -788,23 +788,6 @@ const deleteHotel = async (req, res, next) => {
   }
 };
 
-// get hotels by city name
-// const countByCity = async (req, res, next) => {
-//   const citiesString = req.query.cities;
-//   const citiesArray = citiesString.split(",");
-//   try {
-//     const promiseList = citiesArray.map((city) => {
-//       return Hotel.countDocuments({ city });
-//     });
-//     const countList = await Promise.all(promiseList);
-
-//     res.status(201).json({
-//       data: countList,
-//     });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
 
 // get hotels by city name
 const countByCityNew = async (req, res, next) => {
@@ -824,26 +807,6 @@ const countByCityNew = async (req, res, next) => {
   }
 };
 
-// get hotels by type
-// const countByType = async (req, res, next) => {
-//   try {
-//     const hotelCount = await Hotel.countDocuments({ type: "Hotel" });
-//     const apartmentCount = await Hotel.countDocuments({ type: "Apartment" });
-//     const resortCount = await Hotel.countDocuments({ type: "Resort" });
-//     const villaCount = await Hotel.countDocuments({ type: "Villa" });
-//     const cabinCount = await Hotel.countDocuments({ type: "Cabin" });
-
-//     res.status(201).json([
-//       { type: "Hotel", count: hotelCount },
-//       { type: "Apartment", count: apartmentCount },
-//       { type: "Resort", count: resortCount },
-//       { type: "Villa", count: villaCount },
-//       { type: "Cabin", count: cabinCount },
-//     ]);
-//   } catch (err) {
-//     next(err);
-//   }
-// };
 
 // get hotels by type
 const countByTypeNew = async (req, res, next) => {
@@ -909,19 +872,13 @@ const getHotelRooms = async (req, res, next) => {
       req.params.hotel_id,
     ]);
 
-    // build the response object
+    // Build the response object in accordance to what is expected at the Front End
     // add the rooms
     let hotelRoomStyles = [];
-    // let unavailableDates = [];
-    // let photos = [];
-    // let photo_id = [];
-    // let hotel = {};
-
    
-    roomStylesArray.forEach((everyRoomStyle, i) => {
+    roomStylesArray.forEach((everyRoomStyle) => {
       let roomStyle = {};
       roomStyle.roomNumbers = [];
-      let roomNumbers = [];
       let lastIndex;
 
       let datesArray = [];
@@ -981,6 +938,7 @@ const getHotelRooms = async (req, res, next) => {
       });
     });
 
+    console.log("hotelRoomStyles: ", hotelRoomStyles)
 
     res.status(200).json({
       data: hotelRoomStyles,
@@ -990,121 +948,7 @@ const getHotelRooms = async (req, res, next) => {
   }
 };
 
-// hotel statistics
-const getHotelStats = async (req, res, next) => {
-  try {
-    const stats = await Hotel.aggregate([
-      {
-        $match: { rating: { $gte: 1 } },
-      },
-      {
-        $group: {
-          _id: "$type",
-          numHotels: { $sum: 1 },
-          avgRating: { $avg: "$rating" },
-          avgPrice: { $avg: "$cheapestPrice" },
-          minPrice: { $min: "$cheapestPrice" },
-          maxPrice: { $max: "$cheapestPrice" },
-        },
-      },
-      {
-        $sort: { avgPrice: 1 },
-      },
-      {
-        $match: { _id: { $ne: "Apartment" } },
-      },
-    ]);
 
-    res.status(200).json({
-      data: stats,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const getHotelsWithin = async (req, res, next) => {
-  try {
-    const { distance, latlng, unit } = req.params;
-
-    const [lat, lng] = latlng.split(",");
-
-    // radius of the earth is 3962.2 miles or 6378.1 km
-
-    const radius = unit === "mi" ? distance / 3962.2 : distance / 6378.1;
-
-    if (!lat || !lng)
-      return next(
-        createError(
-          "fail",
-          400,
-          "Please provide the latitude and the longitude"
-        )
-      );
-
-    const hotels = await Hotel.find({
-      hotelLocation: {
-        $geoWithin: {
-          $centerSphere: [[lng, lat], radius],
-        },
-      },
-    });
-
-    res.status(200).json({
-      status: "success",
-      number: hotels.length,
-      data: hotels,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
-
-const getDistances = async (req, res, next) => {
-  try {
-    const { latlng, unit } = req.params;
-
-    const [lat, lng] = latlng.split(",");
-
-    if (!lat || !lng)
-      return next(
-        createError(
-          "fail",
-          400,
-          "Please provide the latitude and the longitude"
-        )
-      );
-    const multiplier = unit === "mi" ? 0.000621371 : 0.001;
-
-    const hotels = await Hotel.aggregate([
-      {
-        $geoNear: {
-          near: {
-            type: "Point",
-            coordinates: [lng * 1, lat * 1],
-          },
-          key: "hotelLocation",
-          distanceField: "distanceAway",
-          distanceMultiplier: multiplier,
-        },
-      },
-      {
-        $project: {
-          distanceAway: 1,
-          name: 1,
-        },
-      },
-    ]);
-
-    res.status(200).json({
-      status: "success",
-      number: hotels.length,
-      data: hotels,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
 
 // create hotel city
 const createHotelCity = async (req, res, next) => {
@@ -1183,14 +1027,9 @@ module.exports = {
   getHotel,
   updateHotel,
   deleteHotel,
-  // countByCity,
   countByCityNew,
-  // countByType,
   countByTypeNew,
   getHotelRooms,
-  getHotelStats,
-  getHotelsWithin,
-  getDistances,
   createHotelCity,
   createHotelType,
   getAllHotelCityRefs,
