@@ -56,7 +56,7 @@ const createRoom = async (req, res, next) => {
 
     // check if the hotel exist
     let q = "SELECT name FROM hotels WHERE id_hotels = ?";
-    const [hotelArray, fields2] = await mysqlConnection.execute(q, [
+    const [hotelArray] = await mysqlConnection.execute(q, [
       req.body.hotel * 1,
     ]);
     if (hotelArray.length == 0)
@@ -67,20 +67,21 @@ const createRoom = async (req, res, next) => {
 
     // check if the room style name exists
     q = "SELECT * FROM roomstyles WHERE roomStylesNames = ?";
-    const [roomStylesArray, fields] = await mysqlConnection.execute(q, [
+    const [roomStylesArray] = await mysqlConnection.execute(q, [
       req.body.title.toLowerCase(),
     ]);
-    // console.log("1a");
+    // create the room style if it does not exist
     if (roomStylesArray.length == 0) {
-      // console.log("1b");
+  
       q = "INSERT INTO roomstyles (roomStylesNames) VALUES (?)";
       const result = await mysqlConnection.execute(q, [
         req.body.title.toLowerCase(),
       ]);
       results1 = result[0].insertId;
 
+      // retrieve the newly created room style
       q = "SELECT * FROM roomstyles WHERE id_roomStyles = ?";
-      const [roomStylesArray2, fields1] = await mysqlConnection.execute(q, [
+      const [roomStylesArray2] = await mysqlConnection.execute(q, [
         results1,
       ]);
       roomStyle = roomStylesArray2[0];
@@ -93,7 +94,7 @@ const createRoom = async (req, res, next) => {
 
     // check if any of the provided room numbers already exist in the hotel
     q = "SELECT * FROM roomnumbers INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription   WHERE roomstyledescription.id_hotels = ?";
-    const [hotelRoomNumbersArray, fields5] = await mysqlConnection.execute(q, [
+    const [hotelRoomNumbersArray] = await mysqlConnection.execute(q, [
       req.body.hotel * 1,
     ]);
 
@@ -119,7 +120,7 @@ const createRoom = async (req, res, next) => {
 
     // console.log(4);
 
-    // q = "INSERT IGNORE INTO roomstyledescription (id_roomStyles, id_hotels, price, maxPeople, description) VALUES (?, ?, ?, ?, ?)"
+    // create the new room style in the given hotel
     q =
       "INSERT INTO roomstyledescription (id_roomStyles, id_hotels, price, maxPeople, description) VALUES (?, ?, ?, ?, ?)";
     const result2 = await mysqlConnection.execute(q, [
@@ -131,16 +132,19 @@ const createRoom = async (req, res, next) => {
     ]);
     // console.log('result2: ', result2)
     // console.log(5);
+
+    // retrieve the newly created room style
     q =
-      "SELECT * FROM roomstyledescription WHERE id_hotels = ? AND id_roomStyles = ?";
-    const [roomStyleDescriptionArray, fields3] = await mysqlConnection.execute(
+      "SELECT * FROM roomstyledescription WHERE id_roomStyleDescription = ?";
+    const [roomStyleDescriptionArray] = await mysqlConnection.execute(
       q,
-      [req.body.hotel * 1, results1]
+      [result2[0].insertId]
     );
+    
     const roomStyleDescription = roomStyleDescriptionArray[0];
     // console.log(6);
 
-    // build the query string
+    // build the query string to insert the room numbers
     let q2 = "";
     let values2 = [];
 
@@ -155,17 +159,19 @@ const createRoom = async (req, res, next) => {
     queryString2 = configureQueryStr(q2, ",");
     // console.log(7);
 
-    // q = "INSERT IGNORE INTO roomnumbers (id_roomStyles, id_hotels, roomNumber) VALUES " + queryString2
+    // insert the given room numbers
     q =
       "INSERT INTO roomnumbers (id_roomStyleDescription, roomNumber) VALUES " +
       queryString2;
     const result3 = await mysqlConnection.execute(q, values2);
     q = "SELECT * FROM roomnumbers INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription WHERE roomstyledescription.id_roomStyles = ? AND roomstyledescription.id_hotels = ?";
-    const [roomNumberArray, fields4] = await mysqlConnection.execute(q, [
+    const [roomNumberArray] = await mysqlConnection.execute(q, [
       results1,
       req.body.hotel * 1,
     ]);
     // console.log("roomNumberArray: ", roomNumberArray);
+    console.log("result3[0].insertId: ", result3[0].insertId);
+    console.log("result3: ", result3);
 
     // console.log(8);
 
@@ -201,7 +207,7 @@ const createRoom = async (req, res, next) => {
   }
 };
 
-// continue tomorrow 01-March-2024
+
 const updateRoom = async (req, res, next) => {
   try {
     const mysqlConnection = await db();
@@ -209,7 +215,7 @@ const updateRoom = async (req, res, next) => {
     // check if room style exist in the given hotel
     let q =
       "SELECT * FROM roomstyledescription WHERE id_roomStyleDescription = ?";
-    const [roomStyleDescriptionArray, fields1] = await mysqlConnection.execute(
+    const [roomStyleDescriptionArray] = await mysqlConnection.execute(
       q,
       [req.params.room_id]
     );
@@ -226,7 +232,7 @@ const updateRoom = async (req, res, next) => {
     if (req.body.title) {
       // check if room style name exist
       q = "SELECT * FROM roomstyles WHERE roomStylesNames = ?";
-      const [roomStylesArray, fields] = await mysqlConnection.execute(q, [
+      const [roomStylesArray] = await mysqlConnection.execute(q, [
         req.body.title.toLowerCase(),
       ]);
       // console.log("1a");
@@ -240,7 +246,7 @@ const updateRoom = async (req, res, next) => {
         let results1 = result[0].insertId;
 
         q = "SELECT * FROM roomstyles WHERE id_roomStyles = ?";
-        const [roomStylesArray2, fields2] = await mysqlConnection.execute(q, [
+        const [roomStylesArray2] = await mysqlConnection.execute(q, [
           results1,
         ]);
         // roomStyle = roomStylesArray2[0];
@@ -249,8 +255,6 @@ const updateRoom = async (req, res, next) => {
       } else {
         // console.log("3a");
         newRoomStyleId = roomStylesArray[0].id_roomStyles;
-        // roomStyle = roomStylesArray[0];
-        // results1 = roomStylesArray[0].id_roomStyles;
       }
 
       // update the id_roomStyles in the roomnumbers table
@@ -260,24 +264,7 @@ const updateRoom = async (req, res, next) => {
         newRoomStyleId,
         roomStyleDescriptionArray[0].id_roomStyleDescription,
       ]);
-
-      // // update the id_roomStyles in the roomnumbers table
-      // q =
-      //   "UPDATE roomnumbers SET `id_roomStyles` = ? WHERE id_roomStyles = ? AND id_hotels = ?";
-      // const roomnumbersResult = await mysqlConnection.execute(q, [
-      //   newRoomStyleId,
-      //   oldRoomStyleId,
-      //   givenRoomStyle.id_hotels,
-      // ]);
-
-      // // update the id_roomStyles in the roomnumbers table
-      // q =
-      //   "UPDATE roomstylesphotos SET `id_roomStyles` = ? WHERE id_roomStyles = ? AND id_hotels = ?";
-      // const roomStylesPhotosResult = await mysqlConnection.execute(q, [
-      //   newRoomStyleId,
-      //   oldRoomStyleId,
-      //   givenRoomStyle.id_hotels,
-      // ]);
+      
     }
 
     // console.log(4);
@@ -285,7 +272,7 @@ const updateRoom = async (req, res, next) => {
     if (req.body.addRooms) {
       // check if any of the provided room numbers already exist in the hotel
       q = "SELECT * FROM roomnumbers INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription WHERE roomstyledescription.id_hotels = ?";
-      const [hotelRoomNumbersArray, fields5] = await mysqlConnection.execute(
+      const [hotelRoomNumbersArray] = await mysqlConnection.execute(
         q,
         [givenRoomStyle.id_hotels]
       );
@@ -321,10 +308,12 @@ const updateRoom = async (req, res, next) => {
     let roomNumbers3 = [];
     if (req.body.removeRooms) {
       // check if any of the provided room numbers does not exist for this room style in the hotel
-      q = "SELECT * FROM roomnumbers INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
-      const [hotelRoomNumbersArray, fields5] = await mysqlConnection.execute(
+      // q = "SELECT * FROM roomnumbers INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
+      q = "SELECT * FROM roomnumbers INNER JOIN roomstyledescription ON roomnumbers.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription WHERE roomstyledescription.id_hotels = ?";
+      const [hotelRoomNumbersArray] = await mysqlConnection.execute(
         q,
-        [givenRoomStyle.id_hotels, givenRoomStyle.id_roomStyles]
+        [givenRoomStyle.id_hotels]
+        // [givenRoomStyle.id_hotels, givenRoomStyle.id_roomStyles]
       );
       const hotelStyleRooms = hotelRoomNumbersArray.map((room) => {
         return room.roomNumber;
@@ -426,7 +415,7 @@ const updateRoom = async (req, res, next) => {
         "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription  INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomnumbers.roomNumber IN ( " +
         queryString3 +
         " )";
-      const [roomsToDeleteArray, fields5] = await mysqlConnection.execute(
+      const [roomsToDeleteArray] = await mysqlConnection.execute(
         q,
         qvalues1
       );
@@ -475,176 +464,21 @@ const updateRoom = async (req, res, next) => {
       }
     }
 
-    // console.log(11);
-
-    
-
-
-
-    // get the updated room style
-    let outputString =
-      "roomstyledescription.id_roomStyleDescription, roomstyledescription.id_hotels, roomstyledescription.id_roomStyles, roomstyledescription.price, roomstyledescription.maxPeople, roomstyledescription.description, hotels.name, cities.cityName ";
-    q =
-      "SELECT " +
-      outputString +
-      " FROM roomstyledescription INNER JOIN hotels ON roomstyledescription.id_hotels = hotels.id_hotels INNER JOIN cities ON cities.id_cities = hotels.id_cities WHERE roomstyledescription.id_roomStyleDescription = ?";
-    const [roomStyleArr, fields6] = await mysqlConnection.execute(q, [
-      req.params.room_id,
-    ]);
-    const updatedRoomStyle = roomStyleArr[0];
-    // console.log("updatedRoomStyle: ", updatedRoomStyle);
-
     // recalculate the minimum price of the rooms in this hotel
     q = "SELECT MIN(price) AS minPrice FROM roomstyledescription GROUP BY id_hotels HAVING id_hotels = ?"
-    const [minPriceArr] = await mysqlConnection.execute(q, [roomStyleArr[0].id_hotels])
+    const [minPriceArr] = await mysqlConnection.execute(q, [roomStyleDescriptionArray[0].id_hotels])
     
     q = "UPDATE hotels SET `cheapestPrice` = ? WHERE id_hotels = ?"
-    const updatedHotelResult = await mysqlConnection.execute(q, [minPriceArr[0]?.minPrice || 0, roomStyleArr[0].id_hotels])
-
-
-
-
-
-    // console.log(12);
-    // get all the room numbers associated with the updated room style
-    q =
-      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN roomstyles ON roomstyledescription.id_roomStyles = roomstyles.id_roomStyles   WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
-    const [roomNumArr, fields7] = await mysqlConnection.execute(q, [
-      updatedRoomStyle.id_hotels,
-      updatedRoomStyle.id_roomStyles,
-    ]);
-    // console.log("roomNumArr: ", roomNumArr);
-
-    // console.log(13);
-
-    // get the unavailable dates for every room of this room style
-    q =
-      "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
-    const [unavailableDatesArray, fields8] = await mysqlConnection.execute(q, [
-      updatedRoomStyle.id_hotels,
-      updatedRoomStyle.id_roomStyles,
-    ]);
-
-    // console.log(14);
-
-    // get all the room style photos
-    q =
-      "SELECT * FROM roomstylesphotos INNER JOIN roomstyledescription ON roomstylesphotos.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
-    const [roomStylePhotosArray, fields9] = await mysqlConnection.execute(q, [
-      updatedRoomStyle.id_hotels,
-      updatedRoomStyle.id_roomStyles,
-    ]);
-
-    // console.log(15);
-
-    // create the room objects with room numbers and the unavailable dates array
-    let roomStyleObj = {};
-    roomStyleObj.roomNumbers = [];
-    let roomNums = [];
-    let datesArray = [];
-    roomNumArr.forEach((eachRoom) => {
-      let roomObj = {};
-      roomObj.number = eachRoom.roomNumber;
-      roomObj.unavailableDates = datesArray;
-      roomNums.push(roomObj);
-    });
-
-    // add the unavailable dates
-    roomNums.forEach((room) => {
-      unavailableDatesArray.forEach((eachReservation) => {
-        if (room.number == eachReservation.roomNumber) {
-          room.unavailableDates = [
-            ...room.unavailableDates,
-            ...reservationDates(
-              eachReservation.check_in_date,
-              eachReservation.check_out_date
-            ),
-          ];
-          room.unavailableDates = room.unavailableDates.sort(compareNumbers);
-        }
-      });
-      roomStyleObj.roomNumbers.push(room);
-    });
-
-    // add all the room style photos
-    let picArray = [];
-    let pic_idArray = [];
-    roomStylePhotosArray.forEach((eachPhoto) => {
-      picArray.push(eachPhoto.photos);
-      pic_idArray.push(eachPhoto.photo_id);
-    });
-
-    // add the hotel object
-    let hotelObj = {};
-    hotelObj.name = updatedRoomStyle.name;
-    hotelObj.city = updatedRoomStyle.cityName;
-
-    // update the response object
-    roomStyleObj.title = roomNumArr[0].roomStylesNames;
-    roomStyleObj.price = updatedRoomStyle.price;
-    roomStyleObj.maxPeople = updatedRoomStyle.maxPeople;
-    roomStyleObj.description = updatedRoomStyle.description;
-    roomStyleObj.photos = picArray;
-    roomStyleObj.photo_id = pic_idArray;
-    roomStyleObj.hotel = hotelObj;
-
+    const updatedHotelResult = await mysqlConnection.execute(q, [minPriceArr[0]?.minPrice || 0, roomStyleDescriptionArray[0].id_hotels])
+   
     res.status(200).json({
-      success: true,
-      data: roomStyleObj,
+      success: true
     });
   } catch (err) {
     next(err);
   }
 };
 
-const updateRoomAvailability = async (req, res, next) => {
-  // console.log(req.body.reservedDates)
-
-  const compareNumbers = (a, b) => {
-    return new Date(a).getTime() - new Date(b).getTime();
-  };
-  try {
-    // get the room style to update
-    const roomStyle = await Room.findOne({
-      "roomNumbers._id": req.params.room_id,
-    });
-    // console.log(roomStyle)
-    // get the room to update
-    // console.log(roomStyle.roomNumbers[0]?._id)
-    const room = roomStyle.roomNumbers.find(
-      ({ _id }) => _id == req.params.room_id
-    );
-    // console.log(room)
-
-    // update the unavailable dates for the room
-    const unavailableDates = room.unavailableDates.concat(
-      req.body.reservedDates
-    );
-    // console.log(unavailableDates)
-    if (unavailableDates.length >= 2) {
-      unavailableDates.sort(compareNumbers);
-    }
-
-    // room.unavailableDates = [...unavailableDates]
-    roomStyle.roomNumbers = roomStyle.roomNumbers.map((roomNumber) => {
-      if (roomNumber._id == req.params.room_id) {
-        return {
-          ...roomNumber,
-          unavailableDates: [...unavailableDates],
-        };
-      } else return roomNumber;
-    });
-
-    // console.log(roomStyle)
-
-    // save the updated room
-    await roomStyle.save();
-
-    res.status(200).json("Room status has been updated.");
-  } catch (err) {
-    next(err);
-  }
-};
 
 const deleteRoom = async (req, res, next) => {
   try {
@@ -652,7 +486,7 @@ const deleteRoom = async (req, res, next) => {
     // check if the room style exist
     let q =
       "SELECT * FROM roomstyledescription WHERE id_roomStyleDescription = ?";
-    const [roomStyleArr, fields] = await mysqlConnection.execute(q, [
+    const [roomStyleArr] = await mysqlConnection.execute(q, [
       req.params.room_id,
     ]);
     if (roomStyleArr.length == 0)
@@ -663,7 +497,7 @@ const deleteRoom = async (req, res, next) => {
     // get all the bookings associated with this room style
     q =
       "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
-    const [bookingsArr, fields2] = await mysqlConnection.execute(q, [
+    const [bookingsArr] = await mysqlConnection.execute(q, [
       roomStyleArr[0].id_hotels,
       roomStyleArr[0].id_roomStyles,
     ]);
@@ -721,13 +555,14 @@ const deleteRoom = async (req, res, next) => {
 };
 
 const getRoom = async (req, res, next) => {
+  console.log(1)
   try {
     const mysqlConnection = await db();
     // console.log(1);
     // check if room style exist in the given hotel
     let q =
       "SELECT * FROM roomstyledescription WHERE id_roomStyleDescription = ?";
-    const [roomStyleDescriptionArray, fields1] = await mysqlConnection.execute(
+    const [roomStyleDescriptionArray] = await mysqlConnection.execute(
       q,
       [req.params.room_id]
     );
@@ -747,7 +582,7 @@ const getRoom = async (req, res, next) => {
       "SELECT " +
       outputString +
       " FROM roomstyledescription INNER JOIN hotels ON roomstyledescription.id_hotels = hotels.id_hotels INNER JOIN cities ON cities.id_cities = hotels.id_cities WHERE roomstyledescription.id_roomStyleDescription = ?";
-    const [roomStyleArr, fields6] = await mysqlConnection.execute(q, [
+    const [roomStyleArr] = await mysqlConnection.execute(q, [
       req.params.room_id,
     ]);
     const updatedRoomStyle = roomStyleArr[0];
@@ -757,7 +592,7 @@ const getRoom = async (req, res, next) => {
     // get all the room numbers associated with the updated room style
     q =
       "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN roomstyles ON roomstyledescription.id_roomStyles = roomstyles.id_roomStyles   WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
-    const [roomNumArr, fields7] = await mysqlConnection.execute(q, [
+    const [roomNumArr] = await mysqlConnection.execute(q, [
       updatedRoomStyle.id_hotels,
       updatedRoomStyle.id_roomStyles,
     ]);
@@ -768,7 +603,7 @@ const getRoom = async (req, res, next) => {
     // get the unavailable dates for every room of this room style
     q =
       "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
-    const [unavailableDatesArray, fields8] = await mysqlConnection.execute(q, [
+    const [unavailableDatesArray] = await mysqlConnection.execute(q, [
       updatedRoomStyle.id_hotels,
       updatedRoomStyle.id_roomStyles,
     ]);
@@ -778,7 +613,7 @@ const getRoom = async (req, res, next) => {
     // get all the room style photos
     q =
       "SELECT * FROM roomstylesphotos INNER JOIN roomstyledescription ON roomstylesphotos.id_roomstyleDescription = roomstyledescription.id_roomstyleDescription WHERE roomstyledescription.id_hotels = ? AND roomstyledescription.id_roomStyles = ?";
-    const [roomStylePhotosArray, fields9] = await mysqlConnection.execute(q, [
+    const [roomStylePhotosArray] = await mysqlConnection.execute(q, [
       updatedRoomStyle.id_hotels,
       updatedRoomStyle.id_roomStyles,
     ]);
@@ -843,6 +678,8 @@ const getRoom = async (req, res, next) => {
     //   return next(
     //     createError("fail", 404, "the room you specified does not exist")
     //   );
+
+    console.log("roomStyleObj: ", roomStyleObj)
     res.status(200).json({
       success: true,
       data: roomStyleObj,
@@ -852,6 +689,8 @@ const getRoom = async (req, res, next) => {
   }
 };
 
+
+
 const getAllRooms = async (req, res, next) => {
   try {
     const mysqlConnection = await db();
@@ -859,7 +698,7 @@ const getAllRooms = async (req, res, next) => {
     // get all the room styles
     // console.log(1);
     let q = "SELECT * FROM roomstyledescription";
-    const [roomStyleDescriptionArray, fields1] = await mysqlConnection.execute(
+    const [roomStyleDescriptionArray] = await mysqlConnection.execute(
       q,
       []
     );
@@ -874,17 +713,17 @@ const getAllRooms = async (req, res, next) => {
       "SELECT " +
       outputString +
       " FROM roomstyledescription INNER JOIN hotels ON roomstyledescription.id_hotels = hotels.id_hotels INNER JOIN cities ON cities.id_cities = hotels.id_cities";
-    const [roomStyleArr, fields6] = await mysqlConnection.execute(q, []);
+    const [roomStyleArr] = await mysqlConnection.execute(q, []);
 
     // get all the room numbers
     q =
       "SELECT * FROM roomstyledescription INNER JOIN roomnumbers ON roomstyledescription.id_roomStyleDescription = roomnumbers.id_roomStyleDescription INNER JOIN roomstyles ON roomstyledescription.id_roomStyles = roomstyles.id_roomStyles";
-    const [roomNumArr, fields7] = await mysqlConnection.execute(q, []);
+    const [roomNumArr] = await mysqlConnection.execute(q, []);
 
     // get the unavailable dates for every room
     q =
       "SELECT * FROM roomnumbers INNER JOIN unavailabledates ON roomnumbers.id_roomNumbers = unavailabledates.id_roomNumbers";
-    const [unavailableDatesArray, fields8] = await mysqlConnection.execute(
+    const [unavailableDatesArray] = await mysqlConnection.execute(
       q,
       []
     );
@@ -892,7 +731,7 @@ const getAllRooms = async (req, res, next) => {
     // get all the room style photos
     q =
       "SELECT * FROM roomstylesphotos INNER JOIN roomstyledescription ON roomstylesphotos.id_roomStyleDescription = roomstyledescription.id_roomStyleDescription";
-    const [roomStylePhotosArray, fields9] = await mysqlConnection.execute(
+    const [roomStylePhotosArray] = await mysqlConnection.execute(
       q,
       []
     );
@@ -910,8 +749,7 @@ const getAllRooms = async (req, res, next) => {
         let roomObj = {};
 
         if (
-          eachRoomStyle.id_hotels == eachRoom.id_hotels &&
-          eachRoomStyle.id_roomStyles == eachRoom.id_roomStyles
+          eachRoomStyle.id_roomStyleDescription == eachRoom.id_roomStyleDescription 
         ) {
           roomObj.number = eachRoom.roomNumber;
           roomObj.unavailableDates = datesArray;
@@ -924,8 +762,7 @@ const getAllRooms = async (req, res, next) => {
       roomNums.forEach((room) => {
         unavailableDatesArray.forEach((eachReservation) => {
           if (
-            eachRoomStyle.id_hotels == eachReservation.id_hotels &&
-            eachRoomStyle.id_roomStyles == eachReservation.id_roomStyles
+            eachRoomStyle.id_roomStyleDescription == eachReservation.id_roomStyleDescription
           ) {
             if (room.number == eachReservation.roomNumber) {
               room.unavailableDates = [
@@ -948,8 +785,7 @@ const getAllRooms = async (req, res, next) => {
       let pic_idArray = [];
       roomStylePhotosArray.forEach((eachPhoto) => {
         if (
-          eachRoomStyle.id_hotels == eachPhoto.id_hotels &&
-          eachRoomStyle.id_roomStyles == eachPhoto.id_roomStyles
+          eachRoomStyle.id_roomStyleDescription == eachPhoto.id_roomStyleDescription 
         ) {
           picArray.push(eachPhoto.photos);
           pic_idArray.push(eachPhoto.photo_id);
@@ -974,6 +810,8 @@ const getAllRooms = async (req, res, next) => {
       responseArray.push(roomStyleObj);
     });
 
+    // console.log("responseArray: ", responseArray)
+
     res.status(200).json({
       number: responseArray.length,
       data: responseArray,
@@ -986,7 +824,6 @@ const getAllRooms = async (req, res, next) => {
 module.exports = {
   createRoom,
   updateRoom,
-  updateRoomAvailability,
   deleteRoom,
   getRoom,
   getAllRooms,
