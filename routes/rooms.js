@@ -14,6 +14,6 @@ router.route('/:room_id')
     .patch(verifyAccessToken, verifyRoles(2030), roomsController.updateRoom)
     .delete(verifyAccessToken, verifyRoles(2030), roomsController.deleteRoom)
 
-router.patch('/availability/:room_id', roomsController.updateRoomAvailability)
+// router.patch('/availability/:room_id', roomsController.updateRoomAvailability)
 
 module.exports = router
