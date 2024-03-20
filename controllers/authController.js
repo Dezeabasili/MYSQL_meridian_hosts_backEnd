@@ -56,8 +56,8 @@ const forgotPassword = async (req, res, next) => {
         const mysqlConnection = await db()
 
         // get the user with the provided email 
-        let q1 = "SELECT * FROM users WHERE email = ?"
-        const [userArray] = await mysqlConnection.execute(q1, [req.body.email])
+        let q = "SELECT * FROM users WHERE email = ?"
+        const [userArray] = await mysqlConnection.execute(q, [req.body.email])
         if (userArray.length == 0) return next(createError("fail", 401, "This user does not exist"))
 
         // generate a random rest token
@@ -68,7 +68,7 @@ const forgotPassword = async (req, res, next) => {
         const user = userArray[0]
         const passwordResetToken = token
         const passwordTokenExpiration = format(Date.now() + 10 * 60 * 1000, "yyyy-MM-dd HH:mm:ss") //expires after 10 min
-        q1 = "UPDATE users SET `passwordResetToken` = ?, `passwordTokenExpiration` = ? WHERE id_users = ?"
+        q = "UPDATE users SET `passwordResetToken` = ?, `passwordTokenExpiration` = ? WHERE id_users = ?"
         const results = await mysqlConnection.execute(q, [passwordResetToken, passwordTokenExpiration, user.id_users])
         if (results[0].affectedRows == 0) return next(createError("fail", 401, "This user does not exist"))
 
@@ -80,7 +80,7 @@ const forgotPassword = async (req, res, next) => {
             res.status(200).json('Token sent to your email')
         } catch (err) {
             // if the email fails, reset passwordResetToken and passwordTokenExpiration to null values
-            q1 = "UPDATE users SET `passwordResetToken` = ?, `passwordTokenExpiration` = ? WHERE id_users = ?"
+            q = "UPDATE users SET `passwordResetToken` = ?, `passwordTokenExpiration` = ? WHERE id_users = ?"
             const results = await mysqlConnection.execute(q, [null, null, user.id_users])
             return next(createError('fail', 500, 'Email was not sent. Please try again'))
         }
@@ -95,8 +95,8 @@ const resetPassword = async (req, res, next) => {
         const mysqlConnection = await db()
 
         // get the user that owns the reset token
-        let q1 = "SELECT * FROM users WHERE id_users = ?"
-        const [userArray] = await mysqlConnection.execute(q1, [req.params.user_id])
+        let q = "SELECT * FROM users WHERE id_users = ?"
+        const [userArray] = await mysqlConnection.execute(q, [req.params.user_id])
         if (userArray.length == 0) return next(createError("fail", 401, "This user does not exist"))
         const user = userArray[0]
         const token = req.params.resettoken
@@ -117,7 +117,7 @@ const resetPassword = async (req, res, next) => {
         const passwordTokenExpiration = null
         const passwordResetToken = null
 
-        q1 = "UPDATE users SET `password` = ?, `passwordResetTime` = ?, `passwordResetToken` = ?, `passwordTokenExpiration` = ? WHERE id_users = ?"
+        q = "UPDATE users SET `password` = ?, `passwordResetTime` = ?, `passwordResetToken` = ?, `passwordTokenExpiration` = ? WHERE id_users = ?"
         const results = await mysqlConnection.execute(q, [encryptedPassword, passwordResetTime, passwordResetToken, passwordTokenExpiration, user.id_users])
         if (results[0].affectedRows == 0) return next(createError("fail", 401, "This user does not exist"))
         res.status(200).json("Password reset was successful. Please sign in with your new password ")
@@ -134,8 +134,8 @@ const changePassword = async (req, res, next) => {
         const mysqlConnection = await db()
 
         // get the user with the user id        
-        let q1 = "SELECT * FROM users WHERE id_users = ?"
-        const [userArray] = await mysqlConnection.execute(q1, [req.userInfo.id])
+        let q = "SELECT * FROM users WHERE id_users = ?"
+        const [userArray] = await mysqlConnection.execute(q, [req.userInfo.id])
         if (userArray.length == 0) return next(createError("fail", 401, "This user no longer exists"))
         const user = userArray[0]
 
@@ -146,8 +146,8 @@ const changePassword = async (req, res, next) => {
         // encrypt the new password and save to database
         const encryptedPassword = await bcrypt.hash(req.body.password, 12)
         const passwordResetTime = format(new Date(), "yyyy-MM-dd HH:mm:ss")
-        q1 = "UPDATE users SET `password` = ?, `passwordResetTime` = ? WHERE id_users = ?"
-        const results = await mysqlConnection.execute(q1, [encryptedPassword, passwordResetTime, user.id_users])
+        q = "UPDATE users SET `password` = ?, `passwordResetTime` = ? WHERE id_users = ?"
+        const results = await mysqlConnection.execute(q, [encryptedPassword, passwordResetTime, user.id_users])
         if (results[0].affectedRows == 0) return next(createError("fail", 401, "This user does not exist"))
        
         res.status(200).json("Password reset was successful. Please sign in with your new password ")
