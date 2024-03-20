@@ -24,7 +24,7 @@ const roomsRouter = require("./routes/rooms");
 const reviewsRouter = require("./routes/reviews");
 const stripeRouter = require("./routes/stripe");
 const bookingsRouter = require("./routes/bookings");
-const picturesRouter = require("./routes/pictures");
+// const picturesRouter = require("./routes/pictures");
 const createError = require("./utils/error");
 const schedule = require("node-schedule")
 const sendMorningReport = require('./utils/morningReports')
@@ -101,7 +101,7 @@ app.use("/api/v1/rooms", roomsRouter);
 app.use("/api/v1/reviews", reviewsRouter);
 app.use("/api/v1/stripe", stripeRouter);
 app.use("/api/v1/bookings", bookingsRouter);
-app.use("/api/v1/pictures", picturesRouter);
+
 
 app.all("*", (req, res, next) => {
   next(createError("fail", 404, `cannot find ${req.originalUrl}`));
