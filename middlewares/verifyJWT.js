@@ -19,7 +19,7 @@ const verifyAccessToken = async (req, res, next) => {
 
         // verify if access token has been tampered with or expired
         const userInfo = await jwt.verify(accessToken, process.env.ACCESS_TOKEN)
-        if (!userInfo) return next(createError('fail', 401, 'Your access token has expired or has been tampered with'))
+        // if (!userInfo) return next(createError('fail', 401, 'Your access token has expired or has been tampered with'))
         // console.log(userInfo)
 
 

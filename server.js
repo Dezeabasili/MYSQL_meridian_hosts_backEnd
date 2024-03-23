@@ -135,7 +135,7 @@ app.use((err, req, res, next) => {
   if (err.name === "TokenExpiredError") {
     error = { ...err };
     error.message = "Your access token has expired";
-    error.statusCode = 401;
+    error.statusCode = 403;
     error.status = "fail";
     return res.status(error.statusCode).json({
       status: error.status,
