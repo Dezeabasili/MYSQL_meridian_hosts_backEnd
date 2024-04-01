@@ -65,9 +65,8 @@ const query =
   " WHERE cte1.id_bookings = cte2.id_bookings";
 
 const getAllBookings = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
-
     let responseArray;
 
     // if requesting for all the bookings for a specific hotel
@@ -93,13 +92,14 @@ const getAllBookings = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 const getMyBookings = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
-
     const qMyBookings = query + " AND cte1.userId = ?";
 
     const [bookingsArray] = await mysqlConnection.execute(qMyBookings, [
@@ -118,14 +118,15 @@ const getMyBookings = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 const findCustomerBooking = async (req, res, next) => {
+  const mysqlConnection = await db();
   // either booking reference or customer email if provided
   try {
-    const mysqlConnection = await db();
-
     let bookingsArray;
 
     // if the booking reference is provided
@@ -159,12 +160,14 @@ const findCustomerBooking = async (req, res, next) => {
     res.status(200).json({ data: responseArray });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 const deleteBooking = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
     // check if the booking exist
     let q = "SELECT * FROM bookings WHERE id_bookings = ?";
     const [bookingArr, fields] = await mysqlConnection.execute(q, [
@@ -182,7 +185,9 @@ const deleteBooking = async (req, res, next) => {
     res.status(204).json("booking has been deleted");
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 module.exports = {

@@ -21,8 +21,9 @@ cloudinary.config({
 
 // get all users
 const getAllUsers = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+    
     const q = "SELECT * FROM users";
     const [users, fields] = await mysqlConnection.execute(q, []);
 
@@ -32,13 +33,16 @@ const getAllUsers = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // get a specific user
 const getUser = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     const q = "SELECT * FROM users WHERE id_users = ?";
     const [userArray, fields] = await mysqlConnection.execute(q, [
       req.params.user_id,
@@ -53,13 +57,15 @@ const getUser = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // get a specific user by user email
 const findUser = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
     const q = "SELECT * FROM users WHERE email = ?";
     const [userArray, fields] = await mysqlConnection.execute(q, [
       req.body.email,
@@ -75,13 +81,15 @@ const findUser = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // update a specific user
 const updateUser = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
     let queryString = "";
     let queryString2; 
     let values = [];
@@ -141,13 +149,15 @@ const updateUser = async (req, res, next) => {
     res.status(200).json({data: data});
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // Admin deletes a specific user
 const deleteUser = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
     // check if the user exists
     let q = "SELECT * FROM users WHERE id_users = ?";
     const [userArray, fields] = await mysqlConnection.execute(q, [
@@ -169,45 +179,47 @@ const deleteUser = async (req, res, next) => {
     res.status(204).json("User has been deleted");
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // get user categories
-const usersByCategories = async (req, res, next) => {
-  try {
-    const userCategories = await User.aggregate([
-      {
-        $unwind: "$roles",
-      },
-      {
-        $group: {
-          _id: "$roles",
-          numInCategory: { $sum: 1 },
-          personsInCategory: { $push: "$username" },
-        },
-      },
-      {
-        $addFields: { role: "$_id" },
-      },
-      {
-        $project: { _id: 0 },
-      },
-      {
-        $sort: { numInCategory: -1 },
-      },
-    ]);
-    res.status(200).json({
-      data: userCategories,
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+// const usersByCategories = async (req, res, next) => {
+//   try {
+//     const userCategories = await User.aggregate([
+//       {
+//         $unwind: "$roles",
+//       },
+//       {
+//         $group: {
+//           _id: "$roles",
+//           numInCategory: { $sum: 1 },
+//           personsInCategory: { $push: "$username" },
+//         },
+//       },
+//       {
+//         $addFields: { role: "$_id" },
+//       },
+//       {
+//         $project: { _id: 0 },
+//       },
+//       {
+//         $sort: { numInCategory: -1 },
+//       },
+//     ]);
+//     res.status(200).json({
+//       data: userCategories,
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
 // the request handler below is for a logged in user who wants to change his/her data in the database
 const updateMyAccount = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
     // get user with the user id
     let q = "SELECT * FROM users WHERE id_users = ?";
     const [userArray, fields] = await mysqlConnection.execute(q, [
@@ -287,13 +299,15 @@ values.push(req.body.username)
     res.status(200).json("Your information has been updated");
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // the request handler below is for a logged in user who wants to delete his/her account
 const deleteMyAccount = async (req, res, next) => {
+  const mysqlConnection = await db()
   try {
-    const mysqlConnection = await db()
     // get user with the user id
     let q = "SELECT * FROM users WHERE id_users = ?"
     const [userArray, fields] = await mysqlConnection.execute(q, [req.userInfo.id])
@@ -316,13 +330,16 @@ const deleteMyAccount = async (req, res, next) => {
     res.status(204).json("Sorry to see you leave");
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // the request handler below is for a logged in user who wants to see his/her account information
 const seeMyAccount = async (req, res, next) => {
+  const mysqlConnection = await db()
   try {
-    const mysqlConnection = await db()
+
     //get user with the user id
     let q = "SELECT * FROM users WHERE id_users = ?"
     const [userArray, fields] = await mysqlConnection.execute(q, [req.userInfo.id])
@@ -337,13 +354,16 @@ const seeMyAccount = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // the request handler below is for updating the user's profile photo
 const seeMyPhoto = async (req, res, next) => {
+  const mysqlConnection = await db()
   try {
-    const mysqlConnection = await db()
+
     //get user with the user id
     let q = "SELECT * FROM users WHERE id_users = ?"
     const [userArray, fields] = await mysqlConnection.execute(q, [req.userInfo.id])
@@ -356,13 +376,16 @@ const seeMyPhoto = async (req, res, next) => {
     return res.status(200).json({ data: loggedInUser.photo });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // the request handler below is for deleting the user's profile photo
 const deleteMyPhoto = async (req, res, next) => {
+  const mysqlConnection = await db()
   try {
-    const mysqlConnection = await db()
+
     //get user with the user id
     let q = "SELECT * FROM users WHERE id_users = ?"
     const [userArray, fields] = await mysqlConnection.execute(q, [req.userInfo.id])
@@ -387,12 +410,15 @@ const deleteMyPhoto = async (req, res, next) => {
     return res.status(204).json("profile photo changed successfully");
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 const handleSubscription = async (req, res, next) => {
+  const mysqlConnection = await db()
   try {
-    const mysqlConnection = await db()
+
     //get user with the user id
     let q = "SELECT * FROM users WHERE email = ?"
     const [userArray, fields] = await mysqlConnection.execute(q, [req.body.email.toLowerCase()])
@@ -409,12 +435,15 @@ const handleSubscription = async (req, res, next) => {
     res.status(200).json("Thank you for subscribing to our news letters");
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 const createRoles = async (req, res, next) => {
+  const mysqlConnection = await db()
   try {
-    const mysqlConnection = await db()
+
     let q = "INSERT INTO staff_roles (id_staff_roles, staffRoles) VALUES (?, ?)";
     // const values = [req.body.roles_id, req.body.staffRole];
     const results = await mysqlConnection.execute(q, [req.body.roles_id, req.body.staffRole])
@@ -427,7 +456,9 @@ const createRoles = async (req, res, next) => {
       return res.status(201).json("role created")
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
   
   
 };
@@ -438,7 +469,7 @@ module.exports = {
   findUser,
   updateUser,
   deleteUser,
-  usersByCategories,
+  // usersByCategories,
   updateMyAccount,
   deleteMyAccount,
   seeMyAccount,

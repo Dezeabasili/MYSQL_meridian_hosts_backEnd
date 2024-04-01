@@ -26,8 +26,9 @@ const reviewResp = (clientReview) => {
 
 // create review
 const createReview = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+    
     // confirm the booking ref exists
     let q = "SELECT * FROM bookings WHERE id_bookings = ?"
     const [customerBookingArr] = await mysqlConnection.execute(q, [req.body.bookingRef * 1])
@@ -75,13 +76,16 @@ const createReview = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // get all reviews
 const getAllReviews = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
 
     let values = []
     let outputString ="reviews.id_reviews, reviews.review, reviews.rating, reviews.createdAt, hotels.name AS hotelName, users.name AS customerName";
@@ -107,12 +111,15 @@ const getAllReviews = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 const getAllMyReviews = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
 
     let outputString ="reviews.id_reviews, reviews.review, reviews.rating, reviews.createdAt, hotels.name AS hotelName, users.name AS customerName";
     let q= "SELECT " + outputString + " FROM reviews INNER JOIN bookings ON reviews.id_bookings = bookings.id_bookings INNER JOIN users ON users.id_users = bookings.id_users INNER JOIN hotels ON hotels.id_hotels = bookings.id_hotels WHERE users.id_users = ?"
@@ -131,16 +138,17 @@ const getAllMyReviews = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 
 
 // update a review
 const updateReview = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-
-    const mysqlConnection = await db();
     let queryString = "";
     let values = [];
     let q;
@@ -194,13 +202,16 @@ const updateReview = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // delete a review
 const deleteReview = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     // check if the review exist
     let outputString ="reviews.id_reviews, reviews.review, reviews.rating, reviews.createdAt, hotels.id_hotels, hotels.name AS hotelName";
  
@@ -228,7 +239,9 @@ const deleteReview = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 module.exports = {

@@ -44,6 +44,8 @@ const login = async (req, res, next) => {
 
     } catch (err) {
         next(err)
+    } finally {
+        await mysqlConnection.end()
     }
 }
 
@@ -51,10 +53,9 @@ const login = async (req, res, next) => {
 // the following two request handlers are for users who forgot their passwords.
 // such users should be able to remember their registered emails.
 const forgotPassword = async (req, res, next) => {
+    const mysqlConnection = await db()
     
     try {
-        const mysqlConnection = await db()
-
         // get the user with the provided email 
         let q = "SELECT * FROM users WHERE email = ?"
         const [userArray] = await mysqlConnection.execute(q, [req.body.email])
@@ -87,13 +88,14 @@ const forgotPassword = async (req, res, next) => {
 
     } catch (err) {
         next(err)
+    } finally {
+        await mysqlConnection.end()
     }
 }
 
 const resetPassword = async (req, res, next) => {
+    const mysqlConnection = await db()
     try {
-        const mysqlConnection = await db()
-
         // get the user that owns the reset token
         let q = "SELECT * FROM users WHERE id_users = ?"
         const [userArray] = await mysqlConnection.execute(q, [req.params.user_id])
@@ -123,6 +125,8 @@ const resetPassword = async (req, res, next) => {
         res.status(200).json("Password reset was successful. Please sign in with your new password ")
     } catch (err) {
         next(err)
+    } finally {
+        await mysqlConnection.end()
     }
 
 }
@@ -130,9 +134,8 @@ const resetPassword = async (req, res, next) => {
 // the request handler below is for a logged in user who wants to change his/her password
 // the user is required to know his/her current password
 const changePassword = async (req, res, next) => {
+    const mysqlConnection = await db()
     try {
-        const mysqlConnection = await db()
-
         // get the user with the user id        
         let q = "SELECT * FROM users WHERE id_users = ?"
         const [userArray] = await mysqlConnection.execute(q, [req.userInfo.id])
@@ -153,6 +156,8 @@ const changePassword = async (req, res, next) => {
         res.status(200).json("Password reset was successful. Please sign in with your new password ")
     } catch (err) {
         next(err)
+    } finally {
+        await mysqlConnection.end()
     }
 }
 

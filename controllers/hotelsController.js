@@ -61,8 +61,9 @@ const createHotel = async (req, res, next) => {
   const { name, city, type, description, detailedDescription } = req.body;
   let q = "";
 
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+ 
 
     let queryString2;
 
@@ -244,14 +245,15 @@ const createHotel = async (req, res, next) => {
       await mysqlConnection.execute(q, hotelStaffList);
     }
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // get all hotels
 const getAllHotels = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
-
     let selections =
       "cities.cityName, cities.id_cities, hotels.id_hotels, hotels.name, hotels.description, hotels.detailedDescription, hotels.photos, " + 
       " hotels.photo_id, hotels.numberOfRatings, hotels.ratingsAverage, hotels.cheapestPrice, hoteltypes.hotelType, hoteltypes.id_hotelTypes ";
@@ -385,13 +387,16 @@ const getAllHotels = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // List hotels within a price range
 const getAllHotelsWithinPriceRange = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     const minPrice = req.query.min * 1 || 0;
     const maxPrice = req.query.max * 1 || 1000;
     let selections =
@@ -466,13 +471,16 @@ const getAllHotelsWithinPriceRange = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // get a specific hotel
 const getHotel = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
 
     let selections =
       "cities.cityName, cities.id_cities, hotels.id_hotels, hotels.name, hotels.description, hotels.detailedDescription, hotels.photos, " + 
@@ -530,7 +538,9 @@ const getHotel = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // update a specific hotel
@@ -538,9 +548,10 @@ const updateHotel = async (req, res, next) => {
   let queryString1 = "";
   let values1 = [];
   let queryString2 = "";
+  const mysqlConnection = await db();
 
   try {
-    const mysqlConnection = await db();
+ 
 
     // check if the hotel exist
     let q = "SELECT * FROM hotels WHERE id_hotels = ?";
@@ -734,13 +745,16 @@ const updateHotel = async (req, res, next) => {
     res.status(200).json({ data: "Done" });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // delete a specific hotel
 const deleteHotel = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+   
     // check if the hotel exist
     let q = "SELECT * FROM hotels WHERE id_hotels = ?";
     const [hotelArray] = await mysqlConnection.execute(q, [
@@ -785,14 +799,17 @@ const deleteHotel = async (req, res, next) => {
     res.status(204).json("Hotel has been deleted");
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 
 // get hotels by city name
 const countByCityNew = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
 
     let q =
       "SELECT * FROM (SELECT id_cities, COUNT(id_cities) AS numberOfHotels FROM hotels GROUP BY id_cities) AS abcd INNER JOIN cities ON abcd.id_cities = cities.id_cities";
@@ -804,15 +821,18 @@ const countByCityNew = async (req, res, next) => {
 
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 
 // get hotels by type
 const countByTypeNew = async (req, res, next) => {
   let hotelTypeData = [];
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     let q =
       "SELECT * FROM (SELECT id_hotelTypes, COUNT(id_hotelTypes) AS numberOfHotels FROM hotels GROUP BY id_hotelTypes) AS abcd INNER JOIN hoteltypes ON abcd.id_hotelTypes = hoteltypes.id_hotelTypes";
 
@@ -823,13 +843,16 @@ const countByTypeNew = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // get rooms in a specific hotel
 const getHotelRooms = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     let q =
       "SELECT hotels.name, cities.id_cities, cities.cityName FROM cities INNER JOIN hotels ON cities.id_cities = hotels.id_cities WHERE hotels.id_hotels = ?";
     const [hotelArray] = await mysqlConnection.execute(q, [
@@ -945,15 +968,18 @@ const getHotelRooms = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 
 
 // create hotel city
 const createHotelCity = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     let q = "INSERT INTO cities (cityName) VALUES(?) ";
     const results = await mysqlConnection.execute(q, [req.body.cityName]);
 
@@ -968,13 +994,16 @@ const createHotelCity = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // create hotel type
 const createHotelType = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     let q = "INSERT INTO hoteltypes (hotelType) VALUES(?) ";
     const results = await mysqlConnection.execute(q, [req.body.hotelType]);
 
@@ -989,13 +1018,16 @@ const createHotelType = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // get all hotel cities references
 const getAllHotelCityRefs = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+ 
     let q = "SELECT * FROM cities";
     const [citiesArray, fields] = await mysqlConnection.execute(q, []);
     res.status(200).json({
@@ -1003,13 +1035,16 @@ const getAllHotelCityRefs = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 // get all hotel types references
 const getAllHotelTypeRefs = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     let q = "SELECT * FROM hoteltypes";
     const [hotelTypeArray, fields] = await mysqlConnection.execute(q, []);
     res.status(200).json({
@@ -1017,7 +1052,9 @@ const getAllHotelTypeRefs = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 module.exports = {

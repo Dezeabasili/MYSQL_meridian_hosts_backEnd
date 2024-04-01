@@ -9,7 +9,7 @@ router.route('/')
     // .get(verifyAccessToken, verifyRoles(2030), usersController.getAllUsers)
     .get(usersController.getAllUsers)
 
-router.get('/usercategories', usersController.usersByCategories)
+// router.get('/usercategories', usersController.usersByCategories)
 
 router.post('/forgotpassword', authController.forgotPassword)
 

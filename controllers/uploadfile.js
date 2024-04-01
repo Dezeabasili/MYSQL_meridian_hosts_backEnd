@@ -20,8 +20,9 @@ cloudinary.config({
 });
 
 const upload_file = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+  
     // get the user
     let q = "SELECT * FROM users WHERE id_users = ?";
     const [userArray, fields] = await mysqlConnection.execute(q, [
@@ -185,7 +186,9 @@ const upload_file = async (req, res, next) => {
     res.status(200).json("file(s) uploaded successfully");
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 module.exports = upload_file;

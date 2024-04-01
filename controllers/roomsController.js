@@ -49,10 +49,10 @@ const compareNumbers = (a, b) => {
 };
 
 const createRoom = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
     let results1;
     let roomStyle;
-    const mysqlConnection = await db();
 
     // check if the hotel exist
     let q = "SELECT name FROM hotels WHERE id_hotels = ?";
@@ -204,13 +204,16 @@ const createRoom = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 
 const updateRoom = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+ 
     // console.log(1);
     // check if room style exist in the given hotel
     let q =
@@ -477,13 +480,16 @@ const updateRoom = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 
 const deleteRoom = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     // check if the room style exist
     let q =
       "SELECT * FROM roomstyledescription WHERE id_roomStyleDescription = ?";
@@ -553,13 +559,15 @@ const deleteRoom = async (req, res, next) => {
     res.status(204).json("Room has been deleted.");
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 const getRoom = async (req, res, next) => {
-  console.log(1)
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
+
     // console.log(1);
     // check if room style exist in the given hotel
     let q =
@@ -691,15 +699,16 @@ const getRoom = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 
 
 const getAllRooms = async (req, res, next) => {
+  const mysqlConnection = await db();
   try {
-    const mysqlConnection = await db();
-
     // get all the room styles
     // console.log(1);
     let q = "SELECT * FROM roomstyledescription";
@@ -823,7 +832,9 @@ const getAllRooms = async (req, res, next) => {
     });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 module.exports = {

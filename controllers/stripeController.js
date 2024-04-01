@@ -25,25 +25,20 @@ const compareRoomNumbers = (a, b) => {
   return a.roomNumber - b.roomNumber;
 };
 
-
-
 let bookedRoomsDetails = [];
 
 // app.post('/create-checkout-session', async (req, res) => {
 const stripeCheckout = async (req, res, next) => {
   const { selectedRooms, reservedDates, hotel_id } = req.body;
-
+  const mysqlConnection = await db();
 
   try {
     const numberOfNights = reservedDates.length - 1;
 
     // get all room styles
-    const mysqlConnection = await db();
-
     let q;
     q = " SELECT * FROM hotels WHERE id_hotels = ?"
     const [hotelArr] = await mysqlConnection.execute(q, [hotel_id * 1])
-
 
     // build the query to get all the booked room styles
     let qstring = "";
@@ -111,7 +106,9 @@ const stripeCheckout = async (req, res, next) => {
     res.send({ url: session.url });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 
@@ -122,6 +119,8 @@ const stripeWebHook = async (req, res, next) => {
   const payload = req.body;
 
   const sig = req.headers["stripe-signature"];
+
+  const mysqlConnection = await db();
 
   let event;
   try {
@@ -158,7 +157,7 @@ const stripeWebHook = async (req, res, next) => {
       const numberOfNights = reservedDates.length - 1;
 
       // get all room styles
-      const mysqlConnection = await db();
+
 
       console.log(2);
 
@@ -290,7 +289,9 @@ const stripeWebHook = async (req, res, next) => {
     return res.json({ received: true });
   } catch (err) {
     next(err);
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 module.exports = {

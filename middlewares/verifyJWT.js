@@ -4,8 +4,9 @@ const db = require("./../utils/mysqlConnectionWithPromise");
 // const User = require('./../models/users')
 
 const verifyAccessToken = async (req, res, next) => {
+    const mysqlConnection = await db()
     try {
-        const mysqlConnection = await db()
+        
         
         // check if req has the authorization header
         const authorizationHeader = req.headers?.authorization
@@ -42,6 +43,8 @@ const verifyAccessToken = async (req, res, next) => {
 
     } catch (err) {
         next(err)
+    } finally {
+        await mysqlConnection.end()
     }
 }
 

@@ -5,7 +5,8 @@ const db = require("./../utils/mysqlConnectionWithPromise");
 
 const renewAccessToken = async (req, res, next) => {
     const mysqlConnection = await db();
-    // get refresh token from cookie
+    try {
+        // get refresh token from cookie
     const refreshToken = req.cookies?.jwt
     if (!refreshToken) return res.sendStatus(401) // unauthorized
     let user_id;
@@ -34,6 +35,13 @@ const renewAccessToken = async (req, res, next) => {
     const accessToken = jwt.sign({ id: user.id_users, assignedRoles: user.userCode }, process.env.ACCESS_TOKEN, { expiresIn: '1d' })
 
     res.json({ accessToken, assignedRoles: user.userCode })
+
+    } catch (err) {
+        next(error)
+    } finally {
+        await mysqlConnection.end()
+    }
+    
 }
 
 module.exports = renewAccessToken

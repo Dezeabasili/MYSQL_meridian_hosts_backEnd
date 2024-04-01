@@ -6,11 +6,9 @@ const sendOutMail = require("../utils/handleEmail");
 const db = require("./../utils/mysqlConnectionWithPromise");
 
 const register = async (req, res, next) => {
+  const mysqlConnection = await db()
 
-  // continue tomorrow, 19 Feb
   try {
-    const mysqlConnection = await db()
-
     const { password, email, username, name } = req.body
         if (!password || !email || !username || !name) return next(createError('fail', 400, "forgot to type in your password or username or email"))
 
@@ -39,7 +37,9 @@ const register = async (req, res, next) => {
   res.status(201).json("New user has been created")
   } catch (err) {
     next(err)
-  }
+  } finally {
+    await mysqlConnection.end()
+}
 };
 
 module.exports = { register };
