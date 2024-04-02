@@ -4,11 +4,11 @@ const fs = require("fs");
 
 const db =  async () => {
   const conn = await mysql.createConnection({
-    host: process.env.HOST,
-    user: process.env.USER,
-    password: process.env.PASSWORD,
-    database: process.env.DATABASE,
-    port: process.env.PORT,
+    host: process.env.AIVEN_HOST,
+    user: process.env.AIVEN_USER,
+    password: process.env.AIVEN_PASSWORD,
+    database: process.env.AIVEN_DATABASE,
+    port: process.env.AIVEN_PORT,
     ssl: {
       rejectUnauthorized: true,
       ca: fs.readFileSync("./ca.pem").toString(),
