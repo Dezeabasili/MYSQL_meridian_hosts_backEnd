@@ -32,7 +32,7 @@ const renewAccessToken = async (req, res, next) => {
     console.log("user: ", user)
 
     // generate new access token
-    const accessToken = jwt.sign({ id: user.id_users, assignedRoles: user.userCode }, process.env.ACCESS_TOKEN, { expiresIn: '1d' })
+    const accessToken = jwt.sign({ id: user.id_users, assignedRoles: user.userCode }, process.env.ACCESS_TOKEN, { expiresIn: '900s' })
 
     res.json({ accessToken, assignedRoles: user.userCode })
 

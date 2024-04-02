@@ -27,7 +27,7 @@ const login = async (req, res, next) => {
         if (!pwdCorrect) return next(createError('fail', 401, 'Sorry, cannot log you in'))
 
         // generate access and refresh tokens
-        const accessToken = jwt.sign({ id: user.id_users, assignedRoles: user.userCode }, process.env.ACCESS_TOKEN, { expiresIn: '1d' })
+        const accessToken = jwt.sign({ id: user.id_users, assignedRoles: user.userCode }, process.env.ACCESS_TOKEN, { expiresIn: '900s' })
         const refreshToken = jwt.sign({ id: user.id_users, assignedRoles: user.userCode }, process.env.REFRESH_TOKEN, { expiresIn: '1d' })
 
         // Creates Secure Cookie with refresh token
