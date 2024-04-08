@@ -23,8 +23,8 @@ const sendOutMail = async (newUser) => {
         const msg = {
             to: [
                 {
-                    // email: "ezeabasili@yahoo.co.uk",
-                    email: 'ezeabasili@yahoo.co.uk',
+                    // email: 'ezeabasili@yahoo.co.uk',
+                    email: newUser.email,
                     name: newUser.name
                 }
             ],
@@ -43,7 +43,7 @@ const sendOutMail = async (newUser) => {
         }
 
         await sgMail.send(msg)
-        console.log('email has been sent by Eze of Brazil')
+        console.log('Welcome email has been sent by Eze of Brazil')
 
     } catch (err) {
         console.log(err)
